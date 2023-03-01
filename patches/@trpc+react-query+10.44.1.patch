@@ -1,0 +1,26 @@
+diff --git a/node_modules/@trpc/react-query/dist/shared/proxy/utilsProxy.d.ts b/node_modules/@trpc/react-query/dist/shared/proxy/utilsProxy.d.ts
+index 1986eaf..768b787 100644
+--- a/node_modules/@trpc/react-query/dist/shared/proxy/utilsProxy.d.ts
++++ b/node_modules/@trpc/react-query/dist/shared/proxy/utilsProxy.d.ts
+@@ -4,7 +4,7 @@ import { AnyQueryProcedure, AnyRouter, DeepPartial, Filter, inferProcedureInput,
+ import { inferTransformedProcedureOutput } from '@trpc/server/shared';
+ import { DecoratedProxyTRPCContextProps, TRPCContextState, TRPCFetchInfiniteQueryOptions, TRPCFetchQueryOptions } from '../../internals/context';
+ import { QueryKeyKnown } from '../../internals/getArrayQueryKey';
+-type DecorateProcedure<TProcedure extends AnyQueryProcedure> = {
++export type DecorateProcedure<TProcedure extends AnyQueryProcedure> = {
+     /**
+      * @link https://tanstack.com/query/v4/docs/reference/QueryClient#queryclientfetchquery
+      */
+diff --git a/node_modules/@trpc/react-query/src/shared/proxy/utilsProxy.ts b/node_modules/@trpc/react-query/src/shared/proxy/utilsProxy.ts
+index c713e32..28b9064 100644
+--- a/node_modules/@trpc/react-query/src/shared/proxy/utilsProxy.ts
++++ b/node_modules/@trpc/react-query/src/shared/proxy/utilsProxy.ts
+@@ -34,7 +34,7 @@ import {
+ import { QueryKeyKnown } from '../../internals/getArrayQueryKey';
+ import { getQueryKeyInternal } from '../../internals/getQueryKey';
+ 
+-type DecorateProcedure<TProcedure extends AnyQueryProcedure> = {
++export type DecorateProcedure<TProcedure extends AnyQueryProcedure> = {
+   /**
+    * @link https://tanstack.com/query/v4/docs/reference/QueryClient#queryclientfetchquery
+    */
