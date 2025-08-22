@@ -1,16 +1,15 @@
 import React from "react";
 
-import { useRouter } from "next/router";
+import { useSearch } from "@tanstack/react-router";
 
 export const useLogger = () => {
-	const router = useRouter();
-	return React.useCallback(
-		(message: string) => {
-			if (router.query.debug) {
-				// eslint-disable-next-line no-console
-				console.log(`[DEBUG]: ${message}`);
-			}
-		},
-		[router],
-	);
+  const params = useSearch({ from: "__root__" });
+  return React.useCallback(
+    (message: string) => {
+      if (params.debug) {
+        console.log(`[DEBUG]: ${message}`);
+      }
+    },
+    [params.debug],
+  );
 };

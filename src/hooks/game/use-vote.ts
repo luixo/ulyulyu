@@ -1,97 +1,116 @@
 import React from "react";
 
-import { UsersId, WordsId } from "@/db/models";
-import { useGame } from "@/hooks/use-game";
-import { useMutationHook } from "@/hooks/use-mutation-hook";
-import { usePusher } from "@/hooks/use-pusher";
-import { useSelfUserId } from "@/hooks/use-self-user-id";
+import { useMutation } from "@tanstack/react-query";
+
+import { UserContext } from "~/contexts/user-id-context";
+import type { UserId, WordId } from "~/db/database.gen";
+import { useGame } from "~/hooks/use-game";
+import { useSubscription } from "~/hooks/use-subscription";
 import {
-	useUpdateAdminGuessingCache,
-	useUpdatePlayerGuessingCache,
-} from "@/hooks/use-update-cache";
-import { trpc } from "@/lib/trpc";
+  useUpdateAdminGuessingCache,
+  useUpdatePlayerGuessingCache,
+} from "~/hooks/use-update-cache";
+import { useTRPC } from "~/utils/trpc";
 
 const useChangeGuessPlayerReadyCache = () => {
-	const [updatePlayerGuessingCache, revertPlayerGuessingCache] =
-		useUpdatePlayerGuessingCache();
-	return [
-		React.useCallback(
-			(wordId: WordsId, teamId: UsersId, ready: boolean) =>
-				updatePlayerGuessingCache(
-					(defs) => void (defs[wordId].readiness[teamId] = ready),
-				),
-			[updatePlayerGuessingCache],
-		),
-		revertPlayerGuessingCache,
-	] as const;
+  const [updatePlayerGuessingCache] = useUpdatePlayerGuessingCache();
+  return React.useCallback(
+    (wordId: WordId, teamId: UserId, ready: boolean) =>
+      updatePlayerGuessingCache((defs) =>
+        defs[wordId]
+          ? {
+              ...defs,
+              [wordId]: {
+                ...defs[wordId],
+                readiness: {
+                  ...defs[wordId].readiness,
+                  [teamId]: ready,
+                },
+              },
+            }
+          : defs,
+      ),
+    [updatePlayerGuessingCache],
+  );
 };
 
 const useChangeGuessPlayerVoteCache = () => {
-	const [updatePlayerGuessingCache, revertPlayerGuessingCache] =
-		useUpdatePlayerGuessingCache();
-	return [
-		React.useCallback(
-			(wordId: WordsId, vote: string | null) =>
-				updatePlayerGuessingCache((defs) => void (defs[wordId].vote = vote)),
-			[updatePlayerGuessingCache],
-		),
-		revertPlayerGuessingCache,
-	] as const;
+  const [updatePlayerGuessingCache] = useUpdatePlayerGuessingCache();
+  return React.useCallback(
+    (wordId: WordId, vote: string | null) =>
+      updatePlayerGuessingCache((defs) =>
+        defs[wordId]
+          ? {
+              ...defs,
+              [wordId]: {
+                ...defs[wordId],
+                vote,
+              },
+            }
+          : defs,
+      ),
+    [updatePlayerGuessingCache],
+  );
 };
 
 const useChangeGuessAdminReadyCache = () => {
-	const [updateAdminGuessingCache] = useUpdateAdminGuessingCache();
-	return [
-		React.useCallback(
-			(wordId: WordsId, teamId: UsersId, ready: boolean) =>
-				updateAdminGuessingCache(
-					(defs) => void (defs[wordId].readiness[teamId] = ready),
-				),
-			[updateAdminGuessingCache],
-		),
-	] as const;
+  const [updateAdminGuessingCache] = useUpdateAdminGuessingCache();
+  return React.useCallback(
+    (wordId: WordId, teamId: UserId, ready: boolean) =>
+      updateAdminGuessingCache((defs) =>
+        defs[wordId]
+          ? {
+              ...defs,
+              [wordId]: {
+                ...defs[wordId],
+                readiness: {
+                  ...defs[wordId].readiness,
+                  [teamId]: ready,
+                },
+              },
+            }
+          : defs,
+      ),
+    [updateAdminGuessingCache],
+  );
 };
 
 export const useVoteMutation = () => {
-	const selfUserId = useSelfUserId();
-	const [changeGuessPlayerReadyCache, revertGuessPlayerReadyCache] =
-		useChangeGuessPlayerReadyCache();
-	const [changeGuessPlayerVoteCache, revertGuessPlayerVoteCache] =
-		useChangeGuessPlayerVoteCache();
-	return trpc.definitions.vote.useMutation(
-		useMutationHook([
-			{
-				getKey: (variables) => variables.wordId,
-				onMutate: (variables) =>
-					changeGuessPlayerReadyCache(variables.wordId, selfUserId, true),
-				revert: revertGuessPlayerReadyCache,
-			},
-			{
-				getKey: (variables) => variables.wordId,
-				onMutate: (variables) =>
-					changeGuessPlayerVoteCache(variables.wordId, variables.guessUserId),
-				revert: revertGuessPlayerVoteCache,
-			},
-		]),
-	);
+  const trpc = useTRPC();
+  const { id: selfUserId } = React.use(UserContext);
+  const [, invalidatePlayerGuessingCache] = useUpdatePlayerGuessingCache();
+  const changeGuessPlayerReadyCache = useChangeGuessPlayerReadyCache();
+  const changeGuessPlayerVoteCache = useChangeGuessPlayerVoteCache();
+  return useMutation(
+    trpc.definitions.vote.mutationOptions({
+      onMutate: (variables) => {
+        changeGuessPlayerReadyCache(variables.wordId, selfUserId, true);
+        changeGuessPlayerVoteCache(variables.wordId, variables.guessUserId);
+      },
+      onError: () => {
+        invalidatePlayerGuessingCache();
+        invalidatePlayerGuessingCache();
+      },
+    }),
+  );
 };
 
 export const useSubscribeToTeamVoted = () => {
-	const { isOwner } = useGame();
-	const [changeGuessPlayerReadyCache] = useChangeGuessPlayerReadyCache();
-	const [changeGuessAdminReadyCache] = useChangeGuessAdminReadyCache();
+  const { isOwner } = useGame();
+  const changeGuessPlayerReadyCache = useChangeGuessPlayerReadyCache();
+  const changeGuessAdminReadyCache = useChangeGuessAdminReadyCache();
 
-	return usePusher(
-		"guessing:ready",
-		React.useCallback(
-			({ wordId, teamId, ready }) => {
-				if (isOwner) {
-					changeGuessAdminReadyCache(wordId, teamId, ready);
-				} else {
-					changeGuessPlayerReadyCache(wordId, teamId, ready);
-				}
-			},
-			[changeGuessPlayerReadyCache, changeGuessAdminReadyCache, isOwner],
-		),
-	);
+  return useSubscription(
+    "guessing:ready",
+    React.useCallback(
+      ({ wordId, teamId, ready }) => {
+        if (isOwner) {
+          changeGuessAdminReadyCache(wordId, teamId, ready);
+        } else {
+          changeGuessPlayerReadyCache(wordId, teamId, ready);
+        }
+      },
+      [changeGuessPlayerReadyCache, changeGuessAdminReadyCache, isOwner],
+    ),
+  );
 };

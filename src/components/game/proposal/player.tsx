@@ -1,126 +1,131 @@
 import React from "react";
 
-import { FormElement, Spacer, Textarea, CSS, styled } from "@nextui-org/react";
-import useTranslation from "next-translate/useTranslation";
-import { BsSave as SaveIcon } from "react-icons/bs";
+import { Avatar, Button, Textarea } from "@heroui/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { keys } from "remeda";
 
-import { ClickableIcon } from "@/components/base/clickable-icon";
-import { Flex } from "@/components/base/flex";
-import { TeamsReadiness } from "@/components/game/team-readiness";
-import { WithDefinition } from "@/components/game/with-definition";
-import { WithQuery } from "@/components/game/with-query";
-import { WordTracker } from "@/components/game/word-tracker";
-import { DEFINITIONS } from "@/db/contants";
-import { WordsId } from "@/db/models";
+import { WordTracker } from "~/components/game/word-tracker";
+import { suspendedFallback } from "~/components/suspense-wrapper";
 import {
-	useUpdateDefinitionMutation,
-	useSubscribeToDefinitionReady,
-} from "@/hooks/game/use-update-definition";
-import { Game, useGame } from "@/hooks/use-game";
-import { trpc } from "@/lib/trpc";
-
-const LABEL_TOP_OFFSET = 42;
-const BUTTON_INSET = 8;
-
-const textAreaCss: CSS = {
-	"& label": {
-		letterSpacing: "$tighter",
-		fontSize: "$2xl",
-		fontWeight: "$semibold",
-	},
-};
-
-const TextareaButtonWrapper = styled("div", {
-	position: "absolute",
-	top: LABEL_TOP_OFFSET + BUTTON_INSET,
-	right: BUTTON_INSET,
-});
-
-const Controls = React.memo(() => (
-	<Flex mainAxis="spaceBetween" crossAxis="start">
-		<WordTracker />
-	</Flex>
-));
+  TeamReadinessSkeleton,
+  TeamsReadiness,
+} from "~/components/team-readiness";
+import { DEFINITIONS } from "~/db/const";
+import type { WordId } from "~/db/database.gen";
+import {
+  useSubscribeToDefinitionReady,
+  useUpdateDefinitionMutation,
+} from "~/hooks/game/use-update-definition";
+import type { Game } from "~/hooks/use-game";
+import { useGame } from "~/hooks/use-game";
+import { useReadyAvatarProps } from "~/hooks/use-ready-avatar-props";
+import { useTRPC } from "~/utils/trpc";
 
 const Definition = React.memo<{
-	wordId: WordsId;
-	word: Game["words"][WordsId];
+  wordId: WordId;
+  word: Game["words"][WordId];
 }>(({ wordId, word }) => {
-	const { t } = useTranslation();
-	const { id: gameId } = useGame();
-	const updateDefinitionMutation = useUpdateDefinitionMutation();
-	const [definitionOverride, setDefinitionOverride] = React.useState<string>();
-	const onTextChange = React.useCallback<React.ChangeEventHandler<FormElement>>(
-		(e) => setDefinitionOverride(e.currentTarget.value),
-		[],
-	);
+  const { t } = useTranslation();
+  const { id: gameId } = useGame();
+  const updateDefinitionMutation = useUpdateDefinitionMutation();
+  const [localDefinition, setLocalDefinition] = React.useState<string>(
+    word.definition || "",
+  );
 
-	const saveDefinition = React.useCallback(
-		(nextDefinition: string) => () => {
-			if (
-				word.definition === nextDefinition ||
-				nextDefinition.length < DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH ||
-				nextDefinition.length > DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH
-			) {
-				return;
-			}
-			updateDefinitionMutation.mutate({
-				gameId,
-				wordId,
-				definition: nextDefinition,
-			});
-		},
-		[gameId, updateDefinitionMutation, wordId, word.definition],
-	);
-	return (
-		<Flex position="relative" flexChildren>
-			<Textarea
-				label={t("pages.proposal.player.termLabel", { term: word.term })}
-				value={definitionOverride || word.definition}
-				onChange={onTextChange}
-				minLength={DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH}
-				maxLength={DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH}
-				css={textAreaCss}
-			/>
-			<TextareaButtonWrapper>
-				<ClickableIcon
-					Component={SaveIcon}
-					disabled={!definitionOverride}
-					onClick={saveDefinition(definitionOverride || "")}
-					size={20}
-				/>
-			</TextareaButtonWrapper>
-		</Flex>
-	);
+  const saveDefinition = React.useCallback(
+    (nextDefinition: string) => () => {
+      if (
+        word.definition === nextDefinition ||
+        nextDefinition.length < DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH ||
+        nextDefinition.length > DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH
+      ) {
+        return;
+      }
+      updateDefinitionMutation.mutate({
+        gameId,
+        wordId,
+        definition: nextDefinition,
+      });
+    },
+    [gameId, updateDefinitionMutation, wordId, word.definition],
+  );
+  const readyAvatarProps = useReadyAvatarProps(true);
+
+  const endContent = React.useMemo(
+    () => (
+      <div className="flex self-end">
+        {localDefinition === word.definition ||
+        localDefinition.length < DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH ||
+        localDefinition.length > DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH ? (
+          word.definition === null ? (
+            // Bug: https://github.com/nextui-org/nextui/issues/2069
+            <div />
+          ) : (
+            <Avatar {...readyAvatarProps} />
+          )
+        ) : (
+          <Button
+            color="primary"
+            onPress={saveDefinition(localDefinition || "")}
+          >
+            {t("pages.start.words.saveButton")}
+          </Button>
+        )}
+      </div>
+    ),
+    [localDefinition, word.definition, saveDefinition, readyAvatarProps, t],
+  );
+
+  return (
+    <div className="relative flex">
+      <Textarea
+        label={t("pages.proposal.player.termLabel", { term: word.term })}
+        value={localDefinition}
+        onValueChange={setLocalDefinition}
+        minLength={DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH}
+        maxLength={DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH}
+        classNames={{
+          label: "overflow-visible text-2xl font-semibold tracking-tighter",
+        }}
+        endContent={endContent}
+      />
+    </div>
+  );
 });
 
+const ProposalReadiness = suspendedFallback<{
+  wordId: WordId;
+  teamsAmount: number;
+}>(
+  ({ wordId }) => {
+    const trpc = useTRPC();
+    const { id: gameId } = useGame();
+    const { data: definitions } = useSuspenseQuery(
+      trpc.definitions.getPlayer.queryOptions({
+        gameId,
+      }),
+    );
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return <TeamsReadiness readiness={definitions[wordId]!.readiness} />;
+  },
+  ({ teamsAmount }) => <TeamReadinessSkeleton amount={teamsAmount} />,
+);
+
 type InnerProps = {
-	currentWordId: WordsId;
-	currentWord: Game["words"][WordsId];
+  wordId: WordId;
+  word: Game["words"][WordId];
 };
 
-export const ProposalPhasePlayer = React.memo<InnerProps>(
-	({ currentWordId, currentWord }) => {
-		const { id: gameId } = useGame();
-		const definitionsQuery = trpc.definitions.getPlayer.useQuery({ gameId });
-		useSubscribeToDefinitionReady();
+export const ProposalPhasePlayer: React.FC<InnerProps> = ({ wordId, word }) => {
+  const { teams } = useGame();
+  useSubscribeToDefinitionReady();
 
-		return (
-			<WithQuery query={definitionsQuery}>
-				{(data) => (
-					<WithDefinition data={data} id={currentWordId}>
-						{(definitions) => (
-							<>
-								<Controls />
-								<Spacer y={1} />
-								<Definition wordId={currentWordId} word={currentWord} />
-								<Spacer y={0.5} />
-								<TeamsReadiness readiness={definitions.readiness} />
-							</>
-						)}
-					</WithDefinition>
-				)}
-			</WithQuery>
-		);
-	},
-);
+  return (
+    <div className="flex flex-col gap-4">
+      <WordTracker />
+      <Definition key={wordId} wordId={wordId} word={word} />
+      <ProposalReadiness wordId={wordId} teamsAmount={keys(teams).length} />
+    </div>
+  );
+};

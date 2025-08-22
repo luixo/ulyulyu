@@ -1,0 +1,135 @@
+{
+  "common": {
+    "tryAgain": "Try again",
+    "error": "Error: {{error}}"
+  },
+  "settings": {
+    "title": "Settings",
+    "langSwitcher": {
+      "title": "Switch language"
+    }
+  },
+  "accountSettings": {
+    "title": "Account settings"
+  },
+  "points_one": "{{count}} points",
+  "points_few": "{{count}} points",
+  "points_many": "{{count}} points",
+  "points_other": "{{count}} points",
+  "pages": {
+    "index": {
+      "title": "Ulyulyu game",
+      "createGame": {
+        "title": "Want to create a game?",
+        "button": "Create game",
+        "success": "Game created! Please wait to get redirected.."
+      },
+      "joinGame": {
+        "title": ".. or join one?",
+        "inputLabel": "Game id",
+        "button": "Join a game"
+      },
+      "resumeGame": {
+        "title": "..or check out the previous games?",
+        "button": "Resume game at {{date}}"
+      }
+    },
+    "game": {
+      "title": "Game {{id}}",
+      "notFound": "Game not found"
+    },
+    "start": {
+      "words": {
+        "title": "Dictionary",
+        "wordInputLabel": "Word",
+        "definitionInputLabel": "Definition",
+        "saveButton": "Save",
+        "emptyTitle": "No words in a game yet"
+      },
+      "teams": {
+        "title": "Teams",
+        "placeholder": "Bladgy bladgers",
+        "joinInputLabel": "Join as a team",
+        "joinButton": "Join",
+        "readyPrompt": "Ready?"
+      },
+      "readiness": {
+        "title": "Teams readiness",
+        "leaveButton": "Leave"
+      },
+      "emptyTitle": "No teams in a game yet",
+      "startButton": {
+        "text": "Start!",
+        "errors": {
+          "noTeams": "Cannot start game with less than 2 teams",
+          "noWords": "Cannot start game with no words"
+        }
+      }
+    },
+    "proposal": {
+      "owner": {
+        "termLabel": "{{term}}",
+        "definitionMask": "*****"
+      },
+      "player": {
+        "termLabel": "{{term}}"
+      }
+    },
+    "guessing": {
+      "teamLabelRevealed": "Team {{team}}: {{points}}",
+      "owner": {
+        "definitionMask": "*****",
+        "actualDefinition": "Actual definition",
+        "failedVote": "Voted for team \"{{team}}\"",
+        "successfulVote": "The vote was correct!",
+        "otherVote_one": "Believed by team {{teams}}",
+        "otherVote_few": "Believed by teams {{teams}}",
+        "otherVote_many": "Believed by teams {{teams}}",
+        "otherVote_other": "Believed by teams {{teams}}"
+      },
+      "player": {
+        "guessDefinition": "{{definition}}",
+        "selfDefinition": "Our definition",
+        "originalDefinition": "Original definition",
+        "foreignDefinition": "Team \"{{team}}\"",
+        "correctVote": "We voted correctly!",
+        "foreignVotedForUs": "They believed in our definition",
+        "foreignVotedForThem": "We believed in their definition",
+        "bilateralVote": "We believed in each other's definitions!"
+      }
+    },
+    "finish": {
+      "actualTeamNickname": "Actual definition",
+      "rowName": "{{team}} ({{points}})",
+      "newGame": {
+        "button": "Start new game",
+        "success": "Game created! Please wait to get redirected.."
+      },
+      "back": {
+        "button": "To main page"
+      }
+    }
+  },
+  "components": {
+    "readiness": {
+      "title": "Team readiness",
+      "noTeamError": "No team id {{id}}",
+      "teamLabel": "Team {{team}}"
+    },
+    "nextPhase": {
+      "button": "Next"
+    },
+    "withWord": {
+      "noWordError": "No word for position {{position}}"
+    },
+    "withDefinition": {
+      "noDefinitionError": "No definitions for word id {{id}}"
+    },
+    "withTeam": {
+      "noTeamError": "No team id {{id}}"
+    },
+    "wordTracker": {
+      "title": "Word {{index}} of {{total}}"
+    }
+  }
+}

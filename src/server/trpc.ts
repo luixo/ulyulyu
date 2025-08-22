@@ -1,7 +1,8 @@
 import { initTRPC } from "@trpc/server";
+import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 
-import { UnauthorizedContext } from "@/server/context";
+import { transformer } from "~/utils/transformer";
 
 export const { router, procedure, middleware } = initTRPC
-	.context<UnauthorizedContext>()
-	.create();
+  .context<FetchCreateContextFnOptions>()
+  .create({ transformer });

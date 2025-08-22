@@ -1,0 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
+
+@import "tailwindcss";
+
+@plugin "./heroui.ts";
+@source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  /* Colors for Boring Avatars */
+  :root {
+    --color-avatar1: theme(colors.blue.500);
+    --color-avatar2: theme(colors.indigo.500);
+    --color-avatar3: theme(colors.emerald.500);
+    --color-avatar4: theme(colors.amber.500);
+    --color-avatar5: theme(colors.red.500);
+    --color-avatar6: theme(colors.gray.900);
+  }
+}
+
+@theme {
+  --font-inter: "Inter", sans-serif;
+}
+body {
+  @apply font-inter bg-background text-foreground;
+}

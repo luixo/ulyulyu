@@ -1,15 +1,21 @@
-import { Kysely, PostgresDialect, SelectExpression } from "kysely";
-import { Pool } from "pg";
+import { Kysely, PostgresDialect } from "kysely";
+import { Pool, type PoolConfig } from "pg";
 
-import { getDatabaseConfig } from "./config";
-import { DatabaseTypes } from "./types";
+import type { DB } from "~/db/database.gen";
 
-export type DatabaseSelectExpression<TB extends keyof DatabaseTypes> =
-	SelectExpression<DatabaseTypes, TB>;
+const getDatabaseConfig = (): PoolConfig => {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("Expected to have process.env.DATABASE_URL variable!");
+  }
+  return {
+    connectionString: process.env.DATABASE_URL,
+    ssl: true,
+  };
+};
 
 const databaseConfig = getDatabaseConfig();
 const dialect = new PostgresDialect({
-	pool: new Pool(databaseConfig),
+  pool: new Pool(databaseConfig),
 });
-export type Database = Kysely<DatabaseTypes>;
-export const getDatabase = () => new Kysely<DatabaseTypes>({ dialect });
+export type Database = Kysely<DB>;
+export const getDatabase = () => new Kysely<DB>({ dialect });

@@ -1,112 +1,100 @@
-import React from "react";
+import React, { type SetStateAction } from "react";
 
-import { DecorateProcedure } from "@trpc/react-query/dist/shared/proxy/utilsProxy";
 import {
-	AnyQueryProcedure,
-	inferProcedureInput,
-	inferProcedureOutput,
-} from "@trpc/server";
-import { Patch, applyPatches, produceWithPatches } from "immer";
+  type DataTag,
+  type QueryFilters,
+  useQueryClient,
+} from "@tanstack/react-query";
+import type { TRPCQueryKey } from "@trpc/tanstack-react-query";
 
-import { useGame } from "@/hooks/use-game";
-import { trpc } from "@/lib/trpc";
-import type { AppRouter } from "@/server/router";
+import { useGame } from "~/hooks/use-game";
+import type { RouterOutput } from "~/utils/query";
+import { updateSetStateAction } from "~/utils/react";
+import { useTRPC } from "~/utils/trpc";
 
-type TrpcUtils = ReturnType<(typeof trpc)["useUtils"]>;
-
-type Update<T> = (prev: T) => T;
-type UpdateProcedure<
-	T extends AnyQueryProcedure,
-	V extends inferProcedureOutput<T> = inferProcedureOutput<T>,
-> = (prevOutput: V) => void;
-
-const useUpdateCache = <P extends AnyQueryProcedure>(
-	getFn: (utils: TrpcUtils) => DecorateProcedure<P>,
-	input: inferProcedureInput<P>,
+const useUpdateCache = <Output>(
+  queryFilters: QueryFilters<DataTag<TRPCQueryKey, Output, unknown>>,
 ) => {
-	const trpcUtils = trpc.useUtils();
-	const updateCache = React.useCallback(
-		(updater: Update<inferProcedureOutput<P>>) =>
-			getFn(trpcUtils).setData(input, (prevOutput) =>
-				prevOutput === undefined ? undefined : updater(prevOutput),
-			),
-		[trpcUtils, input, getFn],
-	);
-	const updateData = React.useCallback(
-		(updater: UpdateProcedure<P>) => {
-			let reversePatches: Patch[] = [];
-			updateCache((prevOutput) => {
-				const patchesTuple = produceWithPatches<inferProcedureOutput<P>>(
-					prevOutput,
-					updater,
-				);
-				// eslint-disable-next-line prefer-destructuring
-				reversePatches = patchesTuple[2];
-				return patchesTuple[0];
-			});
-			return reversePatches;
-		},
-		[updateCache],
-	);
-	const revertData = React.useCallback(
-		(patches: Patch[]) =>
-			updateCache((prevOutput) => applyPatches(prevOutput, patches)),
-		[updateCache],
-	);
-	return [updateData, revertData] as const;
+  const queryClient = useQueryClient();
+  const updateCache = React.useCallback(
+    (setStateAction: React.SetStateAction<Output>) =>
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      queryClient.setQueryData<Output>(queryFilters.queryKey!, (prevOutput) =>
+        prevOutput === undefined
+          ? undefined
+          : updateSetStateAction(prevOutput, setStateAction),
+      ),
+    [queryClient, queryFilters],
+  );
+  const updateData = React.useCallback(
+    (setStateAction: SetStateAction<Output>) => {
+      let savedPrevValue: Output | undefined;
+      updateCache((prevOutput) => {
+        const nextOutput = updateSetStateAction(prevOutput, setStateAction);
+        savedPrevValue = prevOutput;
+        return nextOutput;
+      });
+      return savedPrevValue;
+    },
+    [updateCache],
+  );
+  const invalidateData = React.useCallback(
+    () => queryClient.invalidateQueries(queryFilters),
+    [queryClient, queryFilters],
+  );
+  return [updateData, invalidateData] as const;
 };
 
-export const useUpdateGamesCache = () =>
-	useUpdateCache((utils) => utils.games.getAll, undefined);
+export const useUpdateGamesCache = () => {
+  const trpc = useTRPC();
+  return useUpdateCache(trpc.games.getAll.queryFilter());
+};
 
 export const useUpdateGameCache = () => {
-	const { id } = useGame();
-	const [updateCache, revertCache] = useUpdateCache(
-		React.useCallback((utils) => utils.games.get, []),
-		React.useMemo(() => ({ id }), [id]),
-	);
-	const updateSureCache = React.useCallback(
-		(
-			updateProcedure: UpdateProcedure<
-				AppRouter["games"]["get"],
-				NonNullable<inferProcedureOutput<AppRouter["games"]["get"]>>
-			>,
-		) =>
-			updateCache((prevOutput) =>
-				prevOutput === null ? undefined : updateProcedure(prevOutput),
-			),
-		[updateCache],
-	);
-	return [updateSureCache, revertCache] as const;
+  const trpc = useTRPC();
+  const { id } = useGame();
+  const [updateCache, invalidateCache] = useUpdateCache(
+    trpc.games.get.queryFilter({ id }),
+  );
+  const updateSureCache = React.useCallback(
+    (
+      setStateAction: SetStateAction<
+        Exclude<RouterOutput["games"]["get"], null>
+      >,
+    ) =>
+      updateCache((prevOutput) =>
+        prevOutput === null
+          ? null
+          : updateSetStateAction(prevOutput, setStateAction),
+      ),
+    [updateCache],
+  );
+  return [updateSureCache, invalidateCache] as const;
 };
 
 export const useUpdateAdminGuessingCache = () => {
-	const { id: gameId } = useGame();
-	return useUpdateCache(
-		(utils) => utils.definitions.getAdminGuessing,
-		React.useMemo(() => ({ gameId }), [gameId]),
-	);
+  const trpc = useTRPC();
+  const { id: gameId } = useGame();
+  return useUpdateCache(
+    trpc.definitions.getAdminGuessing.queryFilter({ gameId }),
+  );
 };
 
 export const useUpdatePlayerGuessingCache = () => {
-	const { id: gameId } = useGame();
-	return useUpdateCache(
-		(utils) => utils.definitions.getPlayerGuessing,
-		React.useMemo(() => ({ gameId }), [gameId]),
-	);
+  const trpc = useTRPC();
+  const { id: gameId } = useGame();
+  return useUpdateCache(
+    trpc.definitions.getPlayerGuessing.queryFilter({ gameId }),
+  );
 };
 
 export const useUpdateAdminDefinitionsCache = () => {
-	const { id: gameId } = useGame();
-	return useUpdateCache(
-		(utils) => utils.definitions.getAdmin,
-		React.useMemo(() => ({ gameId }), [gameId]),
-	);
+  const trpc = useTRPC();
+  const { id: gameId } = useGame();
+  return useUpdateCache(trpc.definitions.getAdmin.queryFilter({ gameId }));
 };
 export const useUpdatePlayerDefinitionsCache = () => {
-	const { id: gameId } = useGame();
-	return useUpdateCache(
-		(utils) => utils.definitions.getPlayer,
-		React.useMemo(() => ({ gameId }), [gameId]),
-	);
+  const trpc = useTRPC();
+  const { id: gameId } = useGame();
+  return useUpdateCache(trpc.definitions.getPlayer.queryFilter({ gameId }));
 };

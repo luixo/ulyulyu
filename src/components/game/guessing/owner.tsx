@@ -1,149 +1,298 @@
 import React from "react";
 
-import { Spacer, Text, styled } from "@nextui-org/react";
-import useTranslation from "next-translate/useTranslation";
-import {
-	BsFillEyeSlashFill as CrossedEyeIcon,
-	BsFillEyeFill as EyeIcon,
-} from "react-icons/bs";
-import { FaBoxOpen as OpenBox, FaBox as ClosedBox } from "react-icons/fa";
+import { Button, Skeleton } from "@heroui/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { IoExtensionPuzzle as OpenBox } from "react-icons/io5";
+import { entries, isNonNullish, keys, values } from "remeda";
 
-import { ClickableIcon } from "@/components/base/clickable-icon";
-import { Flex } from "@/components/base/flex";
-import { NextPhaseControl } from "@/components/game/next-phase-control";
-import { TeamsReadiness } from "@/components/game/team-readiness";
-import { WithDefinition } from "@/components/game/with-definition";
-import { WithQuery } from "@/components/game/with-query";
-import { WithTeam } from "@/components/game/with-team";
-import { WordControls } from "@/components/game/word-controls";
-import { WordTracker } from "@/components/game/word-tracker";
-import { WordsId } from "@/db/models";
+import { ClickableIcon } from "~/components/base/clickable-icon";
+import { PositionHeader } from "~/components/game/position-header";
+import { ResultCard } from "~/components/game/result-card";
+import { suspendedFallback } from "~/components/suspense-wrapper";
+import { TeamReadiness } from "~/components/team-readiness";
+import type { WordId } from "~/db/database.gen";
+import { useGameStateMutation } from "~/hooks/game/use-game-state";
 import {
-	useRevealWordMutation,
-	useSubscribeToWordReveal,
-} from "@/hooks/game/use-reveal-word";
-import { useWordPositions } from "@/hooks/game/use-word-positions";
-import { Game, useGame } from "@/hooks/use-game";
-import { RouterOutput, trpc } from "@/lib/trpc";
+  useRevealWordMutation,
+  useSubscribeToWordReveal,
+} from "~/hooks/game/use-reveal-word";
+import { useSubscribeToTeamVoted } from "~/hooks/game/use-vote";
+import { useWordPositions } from "~/hooks/game/use-word-positions";
+import type { Game } from "~/hooks/use-game";
+import { useGame } from "~/hooks/use-game";
+import type { RouterOutput } from "~/utils/query";
+import { useTRPC } from "~/utils/trpc";
 
 type Guessing = RouterOutput["definitions"]["getAdminGuessing"];
 
-const DefinitionText = styled(Text, {
-	display: "flex",
-	alignItems: "center",
-	marginBottom: 0,
-});
-
-const Definition = React.memo<{
-	wordId: WordsId;
-	definition: string;
-	revealMap: Guessing[WordsId]["revealMap"];
-}>(({ wordId, definition, revealMap }) => {
-	const { t } = useTranslation();
-	const { id: gameId } = useGame();
-	const [hiddenDefinition, setHiddenDefinition] = React.useState(false);
-	const switchHideDefinition = React.useCallback(
-		() => setHiddenDefinition((show) => !show),
-		[],
-	);
-	const revealMutation = useRevealWordMutation();
-	const revealWord = React.useCallback(() => {
-		revealMutation.mutate({ gameId, wordId });
-	}, [wordId, gameId, revealMutation]);
-	return (
-		<DefinitionText h4>
-			<ClickableIcon
-				onClick={revealWord}
-				Component={revealMap ? ClosedBox : OpenBox}
-				disabled={Boolean(revealMap)}
-				size={32}
-			/>
-			<Spacer x={0.5} />
-			{hiddenDefinition ? t("pages.guessing.owner.definitionMask") : definition}
-			<Spacer x={1} />
-			<ClickableIcon
-				onClick={switchHideDefinition}
-				Component={hiddenDefinition ? EyeIcon : CrossedEyeIcon}
-				size={32}
-			/>
-		</DefinitionText>
-	);
+const RevealButton = React.memo<{
+  wordId: WordId;
+  disabled: boolean;
+}>(({ wordId, disabled }) => {
+  const { id: gameId } = useGame();
+  const revealMutation = useRevealWordMutation();
+  const revealWord = React.useCallback(() => {
+    revealMutation.mutate({ gameId, wordId });
+  }, [wordId, gameId, revealMutation]);
+  return (
+    <ClickableIcon
+      onClick={revealWord}
+      Component={OpenBox}
+      size={32}
+      disabled={disabled}
+    />
+  );
 });
 
 const TeamsDefinitions = React.memo<{
-	definitions: Guessing[WordsId]["definitions"];
-}>(({ definitions }) => {
-	const { t } = useTranslation();
-	const { teams } = useGame();
-	return (
-		<Text>
-			{Object.entries(definitions).map(([id, definition]) => (
-				<WithTeam data={teams} key={id} id={id}>
-					{(team) => (
-						<DefinitionText>
-							<Text b>
-								{t("pages.guessing.teamLabel", { team: team.nickname })}:
-							</Text>
-							<Spacer x={0.25} />
-							{definition}
-						</DefinitionText>
-					)}
-				</WithTeam>
-			))}
-		</Text>
-	);
+  word: Game["words"][WordId];
+  hideSensitiveData: boolean;
+  definitions: Guessing[WordId]["definitions"];
+  readiness: Guessing[WordId]["readiness"];
+}>(({ word, hideSensitiveData, definitions, readiness }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-2">
+      <ResultCard
+        title={t("pages.guessing.owner.actualDefinition")}
+        className="bg-content4"
+      >
+        <span>
+          {hideSensitiveData
+            ? t("pages.guessing.owner.definitionMask")
+            : word.definition}
+        </span>
+      </ResultCard>
+      {entries(definitions).map(([id, definition]) => (
+        <ResultCard
+          key={id}
+          title={
+            <TeamReadiness
+              className="self-start"
+              teamId={id}
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              ready={readiness[id]!}
+            />
+          }
+        >
+          <span>
+            {hideSensitiveData
+              ? t("pages.guessing.owner.definitionMask")
+              : definition}
+          </span>
+        </ResultCard>
+      ))}
+    </div>
+  );
 });
 
-type Props = {
-	wordId: WordsId;
-	word: Game["words"][WordsId];
+const TeamGuesses = React.memo<{
+  word: Game["words"][WordId];
+  guessing: Guessing[WordId];
+  revealMap: NonNullable<Guessing[WordId]["revealMap"]>;
+}>(({ word, guessing, revealMap }) => {
+  const { t } = useTranslation();
+  const teamsValues = values(revealMap).filter(isNonNullish);
+  const { teams } = useGame();
+
+  return (
+    <div className="flex flex-col gap-2">
+      <ResultCard
+        title={t("pages.guessing.owner.actualDefinition")}
+        className="bg-content4"
+      >
+        <span>{word.definition}</span>
+      </ResultCard>
+      {teamsValues.map(({ id, vote }) => {
+        const believedByTeams = teamsValues.filter((team) => team.vote === id);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const votingTeam = teams[id]!;
+        return (
+          <>
+            <ResultCard
+              title={
+                votingTeam
+                  ? votingTeam.nickname
+                  : t("pages.guessing.owner.actualDefinition")
+              }
+              points={
+                (vote === null ? 1 : 0) +
+                teamsValues.filter((team) => team.vote === id).length
+              }
+              footer={
+                <div className="flex flex-col gap-1">
+                  {vote === null ? (
+                    <span className="text-success">
+                      {t("pages.guessing.owner.successfulVote")}
+                    </span>
+                  ) : (
+                    <span className="text-danger">
+                      {t("pages.guessing.owner.failedVote", {
+                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                        team: teams[vote]!.nickname,
+                      })}
+                    </span>
+                  )}
+                  {believedByTeams.length === 0 ? null : (
+                    <i className="text-success">
+                      {t("pages.guessing.owner.otherVote", {
+                        count: believedByTeams.length,
+                        teams: believedByTeams
+                          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                          .map((team) => `"${teams[team.id]!.nickname}"`)
+                          .join(", "),
+                      })}
+                    </i>
+                  )}
+                </div>
+              }
+            >
+              {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
+              <span>{guessing.definitions[id]!}</span>
+            </ResultCard>
+          </>
+        );
+      })}
+    </div>
+  );
+});
+
+const NextButton = suspendedFallback<{
+  wordId: WordId;
+  word: Game["words"][WordId];
+}>(({ wordId, word }) => {
+  const trpc = useTRPC();
+  const { t } = useTranslation();
+  const gameStateMutation = useGameStateMutation();
+  const { id: gameId } = useGame();
+  const nextPhase = React.useCallback(() => {
+    gameStateMutation.mutate({ id: gameId, direction: "forward" });
+  }, [gameStateMutation, gameId]);
+  const { data: definitions } = useSuspenseQuery(
+    trpc.definitions.getAdminGuessing.queryOptions({
+      gameId,
+    }),
+  );
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const wordGuessing = definitions[wordId]!;
+  const { lastWordPosition } = useWordPositions();
+  const allTeamsReady = React.useMemo(
+    () => values(wordGuessing.readiness).every(Boolean),
+    [wordGuessing.readiness],
+  );
+  return (
+    <Button
+      color="primary"
+      onPress={nextPhase}
+      isDisabled={!allTeamsReady || !wordGuessing.revealMap}
+      className={word.position !== lastWordPosition ? "invisible" : undefined}
+    >
+      {t("components.nextPhase.button")}
+    </Button>
+  );
+}, null);
+
+const NextArrow = suspendedFallback<{ wordId: WordId }>(({ wordId }) => {
+  const trpc = useTRPC();
+  const { id: gameId } = useGame();
+  const { data: definitions } = useSuspenseQuery(
+    trpc.definitions.getAdminGuessing.queryOptions({
+      gameId,
+    }),
+  );
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const wordGuessing = definitions[wordId]!;
+  const allTeamsReady = React.useMemo(
+    () => values(wordGuessing.readiness).every(Boolean),
+    [wordGuessing.readiness],
+  );
+  if (wordGuessing.revealMap) {
+    return null;
+  }
+  return <RevealButton wordId={wordId} disabled={!allTeamsReady} />;
+}, null);
+
+const TeamsCard = suspendedFallback<{
+  wordId: WordId;
+  word: Game["words"][WordId];
+  hideSensitiveData: boolean;
+}>(
+  ({ wordId, word, hideSensitiveData }) => {
+    const trpc = useTRPC();
+    const { id: gameId } = useGame();
+    const { data: definitions } = useSuspenseQuery(
+      trpc.definitions.getAdminGuessing.queryOptions({
+        gameId,
+      }),
+    );
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const wordGuessing = definitions[wordId]!;
+    if (wordGuessing.revealMap) {
+      return (
+        <TeamGuesses
+          word={word}
+          guessing={wordGuessing}
+          revealMap={wordGuessing.revealMap}
+        />
+      );
+    }
+    return (
+      <TeamsDefinitions
+        word={word}
+        hideSensitiveData={hideSensitiveData}
+        definitions={wordGuessing.definitions}
+        readiness={wordGuessing.readiness}
+      />
+    );
+  },
+  () => {
+    const { teams } = useGame();
+    return (
+      <>
+        <Skeleton className="h-24 w-full rounded-lg" />
+        {Array.from({ length: keys(teams).length }).map((_, index) => (
+          <Skeleton key={index} className="h-24 w-full rounded-lg" />
+        ))}
+      </>
+    );
+  },
+);
+
+type InnerProps = {
+  wordId: WordId;
+  word: Game["words"][WordId];
 };
 
-export const GuessingPhaseOwner = React.memo<Props>(({ wordId, word }) => {
-	const { id: gameId } = useGame();
-	const definitionsQuery = trpc.definitions.getAdminGuessing.useQuery({
-		gameId,
-	});
-	const { lastWordPosition } = useWordPositions();
-	useSubscribeToWordReveal();
-	return (
-		<WithQuery query={definitionsQuery}>
-			{(data) => {
-				const allWordsReady = Object.values(data).every(
-					(definition) =>
-						Object.values(definition.readiness).every(Boolean) &&
-						Boolean(definition.revealMap),
-				);
-				return (
-					<WithDefinition data={data} id={wordId}>
-						{(wordDefinition) => (
-							<>
-								<Flex crossAxis="center" mainAxis="spaceBetween">
-									<WordControls>
-										<Spacer x={1} />
-										<WordTracker />
-										<Spacer x={1} />
-									</WordControls>
-									<NextPhaseControl
-										hidden={word.position !== lastWordPosition}
-										disabled={!allWordsReady}
-									/>
-								</Flex>
-								<Spacer y={1} />
-								<Definition
-									wordId={wordId}
-									definition={wordDefinition.originalDefinition}
-									revealMap={wordDefinition.revealMap}
-								/>
-								<Spacer y={1} />
-								<TeamsDefinitions definitions={wordDefinition.definitions} />
-								<Spacer y={1} />
-								<TeamsReadiness readiness={wordDefinition.readiness} />
-							</>
-						)}
-					</WithDefinition>
-				);
-			}}
-		</WithQuery>
-	);
-});
+const GuessingPhaseOwnerInner: React.FC<InnerProps> = ({ wordId, word }) => {
+  const [hideSensitiveData, setHideSensitiveData] = React.useState(false);
+  return (
+    <div className="flex flex-col gap-2">
+      <div>
+        <PositionHeader
+          hideSensitiveData={hideSensitiveData}
+          setHideSensitiveData={setHideSensitiveData}
+          nextControl={<NextButton wordId={wordId} word={word} />}
+        >
+          <NextArrow wordId={wordId} />
+        </PositionHeader>
+        <span className="text-3xl">{word.term}</span>
+      </div>
+      <TeamsCard
+        word={word}
+        wordId={wordId}
+        hideSensitiveData={hideSensitiveData}
+      />
+    </div>
+  );
+};
+
+export const GuessingPhaseOwner: React.FC<{
+  wordId: WordId;
+  word: Game["words"][WordId];
+}> = ({ wordId, word }) => {
+  useSubscribeToWordReveal();
+  useSubscribeToTeamVoted();
+
+  return <GuessingPhaseOwnerInner wordId={wordId} word={word} />;
+};

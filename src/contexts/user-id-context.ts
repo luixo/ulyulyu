@@ -1,17 +1,11 @@
 import React from "react";
 
-import { InferQueryResult } from "@trpc/react-query/dist/utils/inferReactQueryProcedure";
+import type { UserId } from "~/server/validation";
+import type { RouterOutput } from "~/utils/query";
 
-import { UsersId } from "@/db/models";
-import type { AppRouter } from "@/server/router";
-
-export type UserContext = {
-	id: UsersId | undefined;
-	name: string | null;
-	sessionId: string;
-	query: InferQueryResult<AppRouter["users"]["upsert"]>;
-};
-
-export const userContext = React.createContext<UserContext | undefined>(
-	undefined,
+export const UserContext = React.createContext<RouterOutput["users"]["upsert"]>(
+  {
+    id: "unknown" as UserId,
+    name: "unknown",
+  },
 );

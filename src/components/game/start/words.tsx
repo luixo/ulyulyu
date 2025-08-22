@@ -1,378 +1,337 @@
 import React from "react";
 
+import { Button, Card, CardBody, Input } from "@heroui/react";
+import { useTranslation } from "react-i18next";
 import {
-	Button,
-	FormElement,
-	Input,
-	Spacer,
-	styled,
-	Text,
-} from "@nextui-org/react";
-import { produce } from "immer";
-import useTranslation from "next-translate/useTranslation";
-import { BsSave as SaveIcon } from "react-icons/bs";
+  IoAddCircle as AddIcon,
+  IoTrashOutline as RemoveIcon,
+  IoSave as SaveIcon,
+} from "react-icons/io5";
+import { entries, keys, omit } from "remeda";
 
-import { Card } from "@/components/base/card";
-import { ClickableIcon } from "@/components/base/clickable-icon";
-import { Flex } from "@/components/base/flex";
-import { DEFINITIONS, WORDS } from "@/db/contants";
-import { WordsId } from "@/db/models";
+import { ClickableIcon } from "~/components/base/clickable-icon";
+import { DEFINITIONS, WORDS } from "~/db/const";
+import type { WordId } from "~/db/database.gen";
 import {
-	useAddWordMutation,
-	useSubscribeToWordAddition,
-} from "@/hooks/game/use-add-word";
+  useAddWordMutation,
+  useSubscribeToWordAddition,
+} from "~/hooks/game/use-add-word";
 import {
-	useRemoveWordMutation,
-	useSubscribeToWordRemoval,
-} from "@/hooks/game/use-remove-word";
-import { useSaveWordDefinitionMutation } from "@/hooks/game/use-save-word-definition";
+  useRemoveWordMutation,
+  useSubscribeToWordRemoval,
+} from "~/hooks/game/use-remove-word";
+import { useSaveWordDefinitionMutation } from "~/hooks/game/use-save-word-definition";
 import {
-	useUpdateTermMutation,
-	useSubscribeToTermUpdate,
-} from "@/hooks/game/use-update-term";
-import { Game, useGame } from "@/hooks/use-game";
+  useSubscribeToTermUpdate,
+  useUpdateTermMutation,
+} from "~/hooks/game/use-update-term";
+import type { Game } from "~/hooks/use-game";
+import { useGame } from "~/hooks/use-game";
 
-const ShrinkSpacer = styled(Spacer, { flex: 0 });
+const NEW_WORD_ID = "__new__" as WordId;
 
-// styling doesn't work with some @nextui-org/react components, styles become less prioritized than default ones
-const BUTTON_CSS = { minWidth: 120 };
-
-const NEW_WORD_ID = "__new__";
-
-const NEW_WORD_ITEM = {
-	position: Infinity,
-	word: "",
-	definition: "",
+const NEW_WORD_ITEM: Game["words"][WordId] = {
+  position: Infinity,
+  term: "",
+  definition: "",
 };
 
 type WordOverrides = Record<
-	WordsId,
-	Partial<
-		Game["words"][WordsId] & {
-			deleted: boolean;
-		}
-	>
+  WordId,
+  Partial<
+    Game["words"][WordId] & {
+      deleted: boolean;
+    }
+  >
 >;
 type SetWordOverrides = React.Dispatch<React.SetStateAction<WordOverrides>>;
 
 type InputProps = {
-	wordId: WordsId;
-	word: Game["words"][WordsId];
-	disabled: boolean;
-	setOverrides: SetWordOverrides;
-	showLabel: boolean;
+  wordId: WordId;
+  word: Game["words"][WordId];
+  disabled: boolean;
+  setOverrides: SetWordOverrides;
+  showLabel: boolean;
 };
 
 const WordInput = React.memo<InputProps>(
-	({ wordId, word, disabled, setOverrides, showLabel }) => {
-		const { t } = useTranslation();
-		const { words: remoteWords, isOwner } = useGame();
-		const saveTermMutation = useUpdateTermMutation();
-		const changeTerm = React.useCallback<React.ChangeEventHandler<FormElement>>(
-			(e) =>
-				setOverrides(
-					produce((prevWords) => {
-						const lookupWord = prevWords[wordId];
-						if (!lookupWord) {
-							prevWords[wordId] = { term: e.currentTarget.value };
-						} else {
-							lookupWord.term = e.currentTarget.value;
-						}
-					}),
-				),
-			[setOverrides, wordId],
-		);
-		const saveTerm = React.useCallback(
-			(nextTerm: string) => async () => {
-				if (
-					nextTerm.length > WORDS.TYPES.MAX_TERM_LENGTH ||
-					nextTerm.length < WORDS.TYPES.MIN_TERM_LENGTH
-				) {
-					return;
-				}
-				saveTermMutation.mutate({ wordId, term: nextTerm });
-				setOverrides(
-					produce((words) => {
-						const lookupWord = words[wordId];
-						if (!lookupWord) {
-							return;
-						}
-						delete lookupWord.term;
-					}),
-				);
-				// TODO: error case
-			},
-			[saveTermMutation, setOverrides, wordId],
-		);
-		const originalWord = remoteWords[wordId];
-		return (
-			<Flex flex={isOwner ? undefined : true} flexChildren>
-				<Input
-					value={word.term}
-					label={
-						showLabel && isOwner
-							? t("pages.start.words.wordInputLabel")
-							: undefined
-					}
-					aria-label={t("pages.start.words.wordInputLabel")}
-					onChange={changeTerm}
-					readOnly={!isOwner}
-					disabled={isOwner ? disabled : false}
-					minLength={WORDS.TYPES.MIN_TERM_LENGTH}
-					maxLength={WORDS.TYPES.MAX_TERM_LENGTH}
-					contentRight={
-						wordId !== NEW_WORD_ID &&
-						(originalWord ? originalWord.term !== word.term : true) &&
-						!disabled &&
-						saveTermMutation.status !== "loading" ? (
-							<ClickableIcon
-								onClick={saveTerm(word.term)}
-								Component={SaveIcon}
-							/>
-						) : null
-					}
-					contentRightStyling={false}
-				/>
-			</Flex>
-		);
-	},
+  ({ wordId, word, disabled, setOverrides, showLabel }) => {
+    const { t } = useTranslation();
+    const { words: remoteWords, isOwner } = useGame();
+    const saveTermMutation = useUpdateTermMutation();
+    const changeTerm = React.useCallback(
+      (nextValue: string) =>
+        setOverrides((prevWords) => ({
+          ...prevWords,
+          [wordId]: { ...prevWords[wordId], term: nextValue },
+        })),
+      [setOverrides, wordId],
+    );
+    const saveTerm = React.useCallback(
+      (nextTerm: string) => async () => {
+        if (
+          nextTerm.length > WORDS.TYPES.MAX_TERM_LENGTH ||
+          nextTerm.length < WORDS.TYPES.MIN_TERM_LENGTH
+        ) {
+          return;
+        }
+        saveTermMutation.mutate({ wordId, term: nextTerm });
+        setOverrides((prevWords) =>
+          prevWords[wordId]
+            ? {
+                ...prevWords,
+                [wordId]: omit(prevWords[wordId], ["term"]),
+              }
+            : prevWords,
+        );
+        // TODO: error case
+      },
+      [saveTermMutation, setOverrides, wordId],
+    );
+    const originalWord = remoteWords[wordId];
+    return (
+      <div className="flex-1">
+        <Input
+          value={word.term}
+          label={
+            showLabel && isOwner
+              ? t("pages.start.words.wordInputLabel")
+              : undefined
+          }
+          aria-label={t("pages.start.words.wordInputLabel")}
+          labelPlacement="outside"
+          onValueChange={changeTerm}
+          isReadOnly={!isOwner}
+          isDisabled={disabled}
+          minLength={WORDS.TYPES.MIN_TERM_LENGTH}
+          maxLength={WORDS.TYPES.MAX_TERM_LENGTH}
+          endContent={
+            wordId !== NEW_WORD_ID &&
+            (originalWord ? originalWord.term !== word.term : true) &&
+            !disabled &&
+            saveTermMutation.status !== "pending" ? (
+              <ClickableIcon
+                onClick={saveTerm(word.term)}
+                Component={SaveIcon}
+              />
+            ) : (
+              // Bug: https://github.com/nextui-org/nextui/issues/2069
+              <div />
+            )
+          }
+        />
+      </div>
+    );
+  },
 );
 
 const DefinitionInput = React.memo<InputProps>(
-	({ wordId, word, disabled, setOverrides, showLabel }) => {
-		const { t } = useTranslation();
-		const { words: remoteWords, isOwner } = useGame();
+  ({ wordId, word, disabled, setOverrides, showLabel }) => {
+    const { t } = useTranslation();
+    const { words: remoteWords, isOwner } = useGame();
 
-		const saveDefinitionMutation = useSaveWordDefinitionMutation();
+    const saveDefinitionMutation = useSaveWordDefinitionMutation();
 
-		const changeDefinition = React.useCallback<
-			React.ChangeEventHandler<FormElement>
-		>(
-			(e) =>
-				setOverrides(
-					produce((prevWords) => {
-						const lookupWord = prevWords[wordId];
-						if (!lookupWord) {
-							prevWords[wordId] = { definition: e.currentTarget.value };
-						} else {
-							lookupWord.definition = e.currentTarget.value;
-						}
-					}),
-				),
-			[setOverrides, wordId],
-		);
-		const saveDefinition = React.useCallback(
-			(nextDefinition: string) => async () => {
-				if (
-					nextDefinition.length > DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH ||
-					nextDefinition.length < DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH
-				) {
-					return;
-				}
-				setOverrides(
-					produce((words) => {
-						const lookupWord = words[wordId];
-						if (!lookupWord) {
-							return;
-						}
-						delete lookupWord.definition;
-					}),
-				);
-				saveDefinitionMutation.mutate({ wordId, definition: nextDefinition });
-				// TODO: error case
-			},
-			[setOverrides, wordId, saveDefinitionMutation],
-		);
-		const originalWord = remoteWords[wordId];
-		return (
-			<Flex flex flexChildren>
-				<Input
-					value={word.definition ?? ""}
-					label={
-						showLabel ? t("pages.start.words.definitionInputLabel") : undefined
-					}
-					aria-label={t("pages.start.words.definitionInputLabel")}
-					onChange={changeDefinition}
-					readOnly={!isOwner}
-					disabled={isOwner ? disabled : false}
-					minLength={DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH}
-					maxLength={DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH}
-					contentRight={
-						wordId !== NEW_WORD_ID &&
-						(originalWord
-							? originalWord.definition !== word.definition
-							: true) &&
-						!disabled &&
-						saveDefinitionMutation.status !== "loading" ? (
-							<ClickableIcon
-								onClick={saveDefinition(word.definition ?? "")}
-								Component={SaveIcon}
-							/>
-						) : null
-					}
-					contentRightStyling={false}
-				/>
-			</Flex>
-		);
-	},
+    const changeDefinition = React.useCallback(
+      (nextDefinition: string) =>
+        setOverrides((prevWords) => ({
+          ...prevWords,
+          [wordId]: { ...prevWords[wordId], definition: nextDefinition },
+        })),
+      [setOverrides, wordId],
+    );
+    const saveDefinition = React.useCallback(
+      (nextDefinition: string) => async () => {
+        if (
+          nextDefinition.length > DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH ||
+          nextDefinition.length < DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH
+        ) {
+          return;
+        }
+        setOverrides((prevWords) =>
+          prevWords[wordId]
+            ? {
+                ...prevWords,
+                [wordId]: omit(prevWords[wordId], ["definition"]),
+              }
+            : prevWords,
+        );
+        saveDefinitionMutation.mutate({ wordId, definition: nextDefinition });
+        // TODO: error case
+      },
+      [setOverrides, wordId, saveDefinitionMutation],
+    );
+    const originalWord = remoteWords[wordId];
+    const isDefinitionDifferent =
+      wordId !== NEW_WORD_ID &&
+      (originalWord ? originalWord.definition !== word.definition : true);
+    return (
+      <div className="flex-1">
+        <Input
+          value={word.definition ?? ""}
+          label={
+            showLabel ? t("pages.start.words.definitionInputLabel") : undefined
+          }
+          labelPlacement="outside"
+          aria-label={t("pages.start.words.definitionInputLabel")}
+          onValueChange={changeDefinition}
+          isReadOnly={!isOwner}
+          isDisabled={disabled}
+          minLength={DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH}
+          maxLength={DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH}
+          color={isDefinitionDifferent ? "warning" : "default"}
+          endContent={
+            isDefinitionDifferent &&
+            !disabled &&
+            saveDefinitionMutation.status !== "pending" ? (
+              <ClickableIcon
+                onClick={saveDefinition(word.definition ?? "")}
+                Component={SaveIcon}
+              />
+            ) : (
+              // Bug: https://github.com/nextui-org/nextui/issues/2069
+              <div />
+            )
+          }
+        />
+      </div>
+    );
+  },
 );
 
 const AddWordButton = React.memo<{
-	word: Game["words"][WordsId];
-	disabled: boolean;
-	addMutation: ReturnType<typeof useAddWordMutation>;
-	setOverrides: SetWordOverrides;
+  word: Game["words"][WordId];
+  disabled: boolean;
+  addMutation: ReturnType<typeof useAddWordMutation>;
+  setOverrides: SetWordOverrides;
 }>(({ word, disabled, setOverrides, addMutation }) => {
-	const { t } = useTranslation();
-	const { id: gameId } = useGame();
-	const putWord = React.useCallback(
-		(term: string, definition: string) => () => {
-			addMutation.mutate({
-				gameId,
-				term,
-				definition,
-			});
-			setOverrides(
-				produce((prevWords) => {
-					prevWords[NEW_WORD_ID] = { ...NEW_WORD_ITEM };
-				}),
-			);
-			// TODO: error case
-		},
-		[setOverrides, addMutation, gameId],
-	);
-	return (
-		<Button
-			onClick={putWord(word.term, word.definition ?? "")}
-			disabled={disabled}
-			auto
-			css={BUTTON_CSS}
-		>
-			{t("pages.start.words.saveButton")}
-		</Button>
-	);
+  const { id: gameId } = useGame();
+  const putWord = React.useCallback(
+    (term: string, definition: string) => () => {
+      addMutation.mutate({
+        gameId,
+        term,
+        definition,
+      });
+      setOverrides((prevWords) => ({
+        ...prevWords,
+        [NEW_WORD_ID]: { ...NEW_WORD_ITEM },
+      }));
+      // TODO: error case
+    },
+    [setOverrides, addMutation, gameId],
+  );
+  return (
+    <Button
+      color="primary"
+      onPress={putWord(word.term, word.definition ?? "")}
+      isDisabled={disabled}
+      isIconOnly
+      variant="bordered"
+    >
+      <AddIcon size={24} />
+    </Button>
+  );
 });
 
 const RemoveWordButton = React.memo<{
-	wordId: WordsId;
-	setOverrides: SetWordOverrides;
+  wordId: WordId;
+  setOverrides: SetWordOverrides;
 }>(({ wordId, setOverrides }) => {
-	const { t } = useTranslation();
-	const removeMutation = useRemoveWordMutation();
-	const removeWord = React.useCallback(async () => {
-		removeMutation.mutate({ id: wordId });
-		setOverrides(
-			produce((words) => {
-				const word = words[wordId];
-				if (!word) {
-					words[wordId] = { deleted: true };
-				} else {
-					word.deleted = true;
-				}
-			}),
-		);
-		// TODO: error case
-	}, [setOverrides, removeMutation, wordId]);
-	return (
-		<Button onClick={removeWord} color="error" auto css={BUTTON_CSS}>
-			{t("pages.start.words.removeButton")}
-		</Button>
-	);
+  const removeMutation = useRemoveWordMutation();
+  const removeWord = React.useCallback(async () => {
+    removeMutation.mutate({ id: wordId });
+    setOverrides((prevWords) => ({
+      ...prevWords,
+      [wordId]: { ...prevWords[wordId], deleted: true },
+    }));
+    // TODO: error case
+  }, [setOverrides, removeMutation, wordId]);
+  return (
+    <Button onPress={removeWord} color="danger" isIconOnly variant="bordered">
+      <RemoveIcon size={24} />
+    </Button>
+  );
 });
 
 const useSortedWords = (overrides: WordOverrides) => {
-	const { words: remoteWords } = useGame();
-	const mergedWords = React.useMemo(
-		() =>
-			[
-				...new Set([...Object.keys(remoteWords), ...Object.keys(overrides)]),
-			].reduce<
-				Record<
-					string,
-					(typeof remoteWords)[WordsId] & (typeof overrides)[WordsId]
-				>
-			>((acc, id) => {
-				const baseWord = remoteWords[id];
-				const overrideWord = overrides[id] || {};
-				return { ...acc, [id]: { ...baseWord, ...overrideWord } };
-			}, {}),
-		[remoteWords, overrides],
-	);
-	return Object.entries(mergedWords)
-		.sort(([, a], [, b]) => a.position - b.position)
-		.filter(([, { deleted }]) => !deleted);
+  const { words: remoteWords } = useGame();
+  const mergedWords = React.useMemo(
+    () =>
+      [...new Set([...keys(remoteWords), ...keys(overrides)])].reduce<
+        Record<
+          WordId,
+          (typeof remoteWords)[WordId] & (typeof overrides)[WordId]
+        >
+      >((acc, id) => {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const baseWord = remoteWords[id]!;
+        const overrideWord = overrides[id] || {};
+        return { ...acc, [id]: { ...baseWord, ...overrideWord } };
+      }, {}),
+    [remoteWords, overrides],
+  );
+  return entries(mergedWords)
+    .sort(([, a], [, b]) => a.position - b.position)
+    .filter(([, { deleted }]) => !deleted);
 };
 
 export const Words = React.memo(() => {
-	const { t } = useTranslation();
-	const { words: remoteWords, isOwner } = useGame();
-	const [wordOverrides, setWordOverrides] = React.useState<
-		Record<WordsId, Partial<Game["words"][WordsId] & { deleted: boolean }>>
-	>(isOwner ? { [NEW_WORD_ID]: NEW_WORD_ITEM } : {});
-	const addMutation = useAddWordMutation();
-	useSubscribeToWordAddition();
-	useSubscribeToWordRemoval();
-	useSubscribeToTermUpdate();
+  const { t } = useTranslation();
+  const { words: remoteWords, isOwner } = useGame();
+  const [wordOverrides, setWordOverrides] = React.useState<
+    Record<WordId, Partial<Game["words"][WordId] & { deleted: boolean }>>
+  >(isOwner ? { [NEW_WORD_ID]: NEW_WORD_ITEM } : {});
+  const addMutation = useAddWordMutation();
+  useSubscribeToWordAddition();
+  useSubscribeToWordRemoval();
+  useSubscribeToTermUpdate();
+  const sortedWords = useSortedWords(wordOverrides);
 
-	const sortedWords = useSortedWords(wordOverrides);
-	return (
-		<Card>
-			<Flex crossAxis="center">
-				<Text h2>{t("pages.start.words.title")}</Text>
-				<Spacer x={0.5} />
-			</Flex>
-			{sortedWords.map(([id, word], index) => {
-				const isAddMutationLoading =
-					id === NEW_WORD_ID ? addMutation.isLoading : false;
-				return (
-					<React.Fragment key={id}>
-						<Flex direction="row" crossAxis="end">
-							<WordInput
-								wordId={id}
-								word={word}
-								disabled={isAddMutationLoading}
-								setOverrides={setWordOverrides}
-								showLabel={index === 0}
-							/>
-							{isOwner ? (
-								<>
-									<ShrinkSpacer x={1} />
-									<DefinitionInput
-										wordId={id}
-										word={word}
-										disabled={isAddMutationLoading}
-										setOverrides={setWordOverrides}
-										showLabel={index === 0}
-									/>
-								</>
-							) : null}
-							{!isOwner ? null : id === NEW_WORD_ID ? (
-								<>
-									<ShrinkSpacer x={1} />
-									<AddWordButton
-										word={word}
-										disabled={isAddMutationLoading}
-										setOverrides={setWordOverrides}
-										addMutation={addMutation}
-									/>
-								</>
-							) : (
-								<>
-									<ShrinkSpacer x={1} />
-									<RemoveWordButton
-										wordId={id}
-										setOverrides={setWordOverrides}
-									/>
-								</>
-							)}
-						</Flex>
-						<Spacer y={1} />
-					</React.Fragment>
-				);
-			})}
-			{Object.keys(remoteWords).length === 0 && !isOwner ? (
-				<Text h3>{t("pages.start.words.emptyTitle")}</Text>
-			) : null}
-		</Card>
-	);
+  return (
+    <Card>
+      <CardBody className="flex flex-col gap-2">
+        <div className="flex justify-between">
+          <h2 className="text-2xl">{t("pages.start.words.title")}</h2>
+        </div>
+        {sortedWords.map(([id, word], index) => {
+          const isAddMutationLoading =
+            id === NEW_WORD_ID ? addMutation.isPending : false;
+          return (
+            <div key={id} className="flex flex-row items-end gap-2">
+              <WordInput
+                wordId={id}
+                word={word}
+                disabled={isAddMutationLoading}
+                setOverrides={setWordOverrides}
+                showLabel={index === 0}
+              />
+              {isOwner ? (
+                <DefinitionInput
+                  wordId={id}
+                  word={word}
+                  disabled={isAddMutationLoading}
+                  setOverrides={setWordOverrides}
+                  showLabel={index === 0}
+                />
+              ) : null}
+              {!isOwner ? null : id === NEW_WORD_ID ? (
+                <AddWordButton
+                  word={word}
+                  disabled={isAddMutationLoading}
+                  setOverrides={setWordOverrides}
+                  addMutation={addMutation}
+                />
+              ) : (
+                <RemoveWordButton wordId={id} setOverrides={setWordOverrides} />
+              )}
+            </div>
+          );
+        })}
+        {keys(remoteWords).length === 0 && !isOwner ? (
+          <h3>{t("pages.start.words.emptyTitle")}</h3>
+        ) : null}
+      </CardBody>
+    </Card>
+  );
 });

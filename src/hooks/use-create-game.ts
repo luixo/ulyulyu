@@ -1,21 +1,26 @@
-import { useRouter } from "next/router";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
 
-import { useUpdateGamesCache } from "@/hooks/use-update-cache";
-import { trpc } from "@/lib/trpc";
+import { useUpdateGamesCache } from "~/hooks/use-update-cache";
+import { useTRPC } from "~/utils/trpc";
 
 export const useCreateGame = () => {
-	const router = useRouter();
-	const [updateGamesCache] = useUpdateGamesCache();
-	return trpc.games.put.useMutation({
-		onSuccess: (game) => {
-			updateGamesCache((games) => {
-				games.push({
-					...game,
-					createTimestamp: new Date(game.createTimestamp),
-					state: { phase: "start" },
-				});
-			});
-			router.push(`/game/${game.id}`);
-		},
-	});
+  const trpc = useTRPC();
+  const router = useRouter();
+  const [updateGamesCache] = useUpdateGamesCache();
+  return useMutation(
+    trpc.games.put.mutationOptions({
+      onSuccess: (game) => {
+        updateGamesCache((games) => [
+          ...games,
+          {
+            ...game,
+            createdAt: new Date(game.createdAt),
+            state: "start",
+          },
+        ]);
+        router.navigate({ to: "/games/$id", params: { id: game.id } });
+      },
+    }),
+  );
 };

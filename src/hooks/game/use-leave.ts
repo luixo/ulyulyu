@@ -1,56 +1,58 @@
 import React from "react";
 
-import { UsersId } from "@/db/models";
-import { useMutationHook } from "@/hooks/use-mutation-hook";
-import { usePusher } from "@/hooks/use-pusher";
-import { useSelfUserId } from "@/hooks/use-self-user-id";
-import { useUpdateGameCache } from "@/hooks/use-update-cache";
-import { trpc } from "@/lib/trpc";
+import { useMutation } from "@tanstack/react-query";
+import { omit } from "remeda";
+
+import { UserContext } from "~/contexts/user-id-context";
+import type { UserId } from "~/db/database.gen";
+import { useSubscription } from "~/hooks/use-subscription";
+import { useUpdateGameCache } from "~/hooks/use-update-cache";
+import { useTRPC } from "~/utils/trpc";
 
 const useRemoveTeamCache = () => {
-	const [updateGameCache, revertGameCache] = useUpdateGameCache();
-	return [
-		React.useCallback(
-			(teamId: UsersId) =>
-				updateGameCache((game) => {
-					delete game.teams[teamId];
-				}),
-			[updateGameCache],
-		),
-		revertGameCache,
-	] as const;
+  const [updateGameCache] = useUpdateGameCache();
+  return React.useCallback(
+    (teamId: UserId) =>
+      updateGameCache((game) => ({
+        ...game,
+        teams: omit(game.teams, [teamId]),
+      })),
+    [updateGameCache],
+  );
 };
 
 export const useLeaveMutation = () => {
-	const selfUserId = useSelfUserId();
-	const [removeTeamCache, revertTeamCache] = useRemoveTeamCache();
-	return trpc.teams.leave.useMutation(
-		useMutationHook({
-			getKey: () => selfUserId,
-			onMutate: () => removeTeamCache(selfUserId),
-			revert: revertTeamCache,
-		}),
-	);
+  const trpc = useTRPC();
+  const { id: selfUserId } = React.use(UserContext);
+  const removeTeamCache = useRemoveTeamCache();
+  const [, invalidateGameCache] = useUpdateGameCache();
+  return useMutation(
+    trpc.teams.leave.mutationOptions({
+      onMutate: () => removeTeamCache(selfUserId),
+      onError: () => invalidateGameCache(),
+    }),
+  );
 };
 
 export const useKickMutation = () => {
-	const [removeTeamCache, revertTeamCache] = useRemoveTeamCache();
-	return trpc.teams.kick.useMutation(
-		useMutationHook({
-			getKey: (variables) => variables.teamId,
-			onMutate: (variables) => removeTeamCache(variables.teamId),
-			revert: revertTeamCache,
-		}),
-	);
+  const trpc = useTRPC();
+  const removeTeamCache = useRemoveTeamCache();
+  const [, invalidateGameCache] = useUpdateGameCache();
+  return useMutation(
+    trpc.teams.kick.mutationOptions({
+      onMutate: (variables) => removeTeamCache(variables.teamId),
+      onError: () => invalidateGameCache(),
+    }),
+  );
 };
 
 export const useSubscribeToLeave = () => {
-	const [removeTeamCache] = useRemoveTeamCache();
-	return usePusher(
-		"team:leave",
-		React.useCallback(
-			({ userId }) => removeTeamCache(userId),
-			[removeTeamCache],
-		),
-	);
+  const removeTeamCache = useRemoveTeamCache();
+  return useSubscription(
+    "team:leave",
+    React.useCallback(
+      ({ userId }) => removeTeamCache(userId),
+      [removeTeamCache],
+    ),
+  );
 };

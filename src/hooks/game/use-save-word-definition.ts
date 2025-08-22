@@ -1,34 +1,38 @@
 import React from "react";
 
-import { WordsId } from "@/db/models";
-import { useMutationHook } from "@/hooks/use-mutation-hook";
-import { useUpdateGameCache } from "@/hooks/use-update-cache";
-import { trpc } from "@/lib/trpc";
+import { useMutation } from "@tanstack/react-query";
+
+import type { WordId } from "~/db/database.gen";
+import { useUpdateGameCache } from "~/hooks/use-update-cache";
+import { useTRPC } from "~/utils/trpc";
 
 const useChangeWordDefinitionCache = () => {
-	const [updateGameCache, revertGameCache] = useUpdateGameCache();
-	return [
-		React.useCallback(
-			(wordId: WordsId, definition: string) =>
-				updateGameCache(
-					(game) => void (game.words[wordId].definition = definition),
-				),
-			[updateGameCache],
-		),
-		revertGameCache,
-	] as const;
+  const [updateGameCache] = useUpdateGameCache();
+  return React.useCallback(
+    (wordId: WordId, definition: string) =>
+      updateGameCache((game) => ({
+        ...game,
+        words: game.words[wordId]
+          ? {
+              ...game.words,
+              [wordId]: { ...game.words[wordId], definition },
+            }
+          : game.words,
+      })),
+    [updateGameCache],
+  );
 };
 
 export const useSaveWordDefinitionMutation = () => {
-	const [changeWordDefinitionCache, revertWordDefinitionCache] =
-		useChangeWordDefinitionCache();
+  const trpc = useTRPC();
+  const changeWordDefinitionCache = useChangeWordDefinitionCache();
+  const [, invalidateGameCache] = useUpdateGameCache();
 
-	return trpc.words.changeDefinition.useMutation(
-		useMutationHook({
-			getKey: (variables) => variables.wordId,
-			onMutate: (variables) =>
-				changeWordDefinitionCache(variables.wordId, variables.definition),
-			revert: revertWordDefinitionCache,
-		}),
-	);
+  return useMutation(
+    trpc.words.changeDefinition.mutationOptions({
+      onMutate: (variables) =>
+        changeWordDefinitionCache(variables.wordId, variables.definition),
+      onError: () => invalidateGameCache(),
+    }),
+  );
 };

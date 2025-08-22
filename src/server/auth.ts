@@ -1,11 +1,17 @@
-import { NextApiResponse } from "next";
+import { serialize } from "cookie";
 
-import { UsersId } from "@/db/models";
-import { USER_ID_COOKIE } from "@/lib/cookie";
-import { YEAR } from "@/lib/time";
-import { setCookie } from "@/server/cookie";
+import type { UserId } from "~/db/database.gen";
+import { USER_ID_COOKIE } from "~/utils/auth";
+import { YEAR } from "~/utils/time";
 
-export const extendAuthCookie = (res: NextApiResponse, id: UsersId) => {
-	const expirationDate = new Date(Date.now() + YEAR);
-	setCookie(res, USER_ID_COOKIE, id, { expires: expirationDate, path: "/" });
+export const getAuthCookie = (id: UserId) => `${USER_ID_COOKIE}=${id}`;
+
+export const getSetAuthCookie = (id: UserId) => {
+  const expirationDate = new Date(Date.now() + YEAR);
+  return serialize(USER_ID_COOKIE, id, { expires: expirationDate, path: "/" });
+};
+
+export const extendAuthCookie = (headers: Headers, id: UserId) => {
+  const setCookieHeader = headers.get("set-cookie") || "";
+  headers.set("set-cookie", setCookieHeader + getSetAuthCookie(id));
 };

@@ -1,154 +1,156 @@
 import React from "react";
 
-import {
-	Button,
-	FormElement,
-	Input,
-	Loading,
-	Spacer,
-	Text,
-} from "@nextui-org/react";
-import { format } from "date-fns";
-import { useRouter } from "next/router";
-import useTranslation from "next-translate/useTranslation";
+import { Button, Card, CardBody, Input, Skeleton } from "@heroui/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 
-import { Card } from "@/components/base/card";
-import { ErrorMessage } from "@/components/error-message";
-import { Header } from "@/components/header";
-import { GAMES } from "@/db/contants";
-import { useCreateGame } from "@/hooks/use-create-game";
-import { RouterOutput, trpc } from "@/lib/trpc";
+import { ErrorMessage } from "~/components/error-message";
+import { Header } from "~/components/header";
+import { suspendedFallback } from "~/components/suspense-wrapper";
+import { GAMES } from "~/db/const";
+import { useCreateGame } from "~/hooks/use-create-game";
+import type { RouterOutput } from "~/utils/query";
+import { useTRPC } from "~/utils/trpc";
 
 const PreviousGame = React.memo<{
-	game: RouterOutput["games"]["getAll"][number];
+  game: RouterOutput["games"]["getAll"][number];
 }>(({ game }) => {
-	const { t } = useTranslation();
-	const router = useRouter();
-	const joinGame = React.useCallback(() => {
-		router.push(`/game/${game.id}`);
-	}, [game.id, router]);
-	const timestamp = new Date(game.createTimestamp);
-	return (
-		<Button
-			onClick={joinGame}
-			color={
-				game.state.phase === "finish"
-					? "success"
-					: game.state.phase === "start"
-					  ? "primary"
-					  : "secondary"
-			}
-		>
-			{t("pages.index.resumeGame.button", {
-				date: format(timestamp, "do MMMM yyyy"),
-			})}
-		</Button>
-	);
+  const { t } = useTranslation();
+  const router = useRouter();
+  const joinGame = React.useCallback(() => {
+    router.navigate({ to: "/games/$id", params: { id: game.id } });
+  }, [game.id, router]);
+  const timestamp = new Date(game.createdAt);
+  return (
+    <Button
+      onPress={joinGame}
+      color={
+        game.state === "done"
+          ? "success"
+          : game.state === "start"
+            ? "primary"
+            : "secondary"
+      }
+    >
+      {t("pages.index.resumeGame.button", {
+        date: new Intl.DateTimeFormat("en").format(timestamp),
+      })}
+    </Button>
+  );
 });
 
-const PreviousGamesCard = React.memo(() => {
-	const { t } = useTranslation();
-	const getAllGamesQuery = trpc.games.getAll.useQuery();
-	if (
-		getAllGamesQuery.status !== "success" ||
-		getAllGamesQuery.data.length === 0
-	) {
-		return null;
-	}
-	return (
-		<>
-			<Spacer y={1} />
-			<Card>
-				<Text h2>{t("pages.index.resumeGame.title")}</Text>
-				{getAllGamesQuery.data.map((game) => (
-					<React.Fragment key={game.id}>
-						<Spacer y={0.5} />
-						<PreviousGame key={game.id} game={game} />
-					</React.Fragment>
-				))}
-			</Card>
-		</>
-	);
-});
+const PreviousGamesCardWrapper: React.FC<React.PropsWithChildren> = ({
+  children,
+}) => {
+  const { t } = useTranslation();
+  return (
+    <Card>
+      <CardBody className="flex flex-col gap-2">
+        <h2 className="text-2xl leading-normal font-semibold">
+          {t("pages.index.resumeGame.title")}
+        </h2>
+        {children}
+      </CardBody>
+    </Card>
+  );
+};
+
+const PreviousGamesCard = suspendedFallback(
+  () => {
+    const trpc = useTRPC();
+    const { data: games } = useSuspenseQuery(trpc.games.getAll.queryOptions());
+    if (games.length === 0) {
+      return null;
+    }
+    return (
+      <PreviousGamesCardWrapper>
+        {games.map((game) => (
+          <PreviousGame key={game.id} game={game} />
+        ))}
+      </PreviousGamesCardWrapper>
+    );
+  },
+  <PreviousGamesCardWrapper>
+    {Array.from({ length: 3 }).map((_, index) => (
+      <Skeleton key={index} className="h-10 w-full rounded-lg" />
+    ))}
+  </PreviousGamesCardWrapper>,
+);
 
 const CreateGameCard = React.memo(() => {
-	const { t } = useTranslation();
-	const createGameMutation = useCreateGame();
-	const createGame = React.useCallback(() => {
-		createGameMutation.mutate();
-	}, [createGameMutation]);
-	return (
-		<Card>
-			<Text h2>{t("pages.index.createGame.title")}</Text>
-			<Button
-				onClick={createGame}
-				disabled={
-					createGameMutation.status === "loading" ||
-					createGameMutation.status === "success"
-				}
-				color={createGameMutation.status === "error" ? "error" : undefined}
-			>
-				{createGameMutation.status === "loading" ? (
-					<Loading color="currentColor" size="sm" />
-				) : createGameMutation.status === "error" ? (
-					t("common.tryAgain")
-				) : createGameMutation.status === "success" ? (
-					t("pages.index.createGame.success")
-				) : (
-					t("pages.index.createGame.button")
-				)}
-			</Button>
-			{createGameMutation.status === "error" ? (
-				<ErrorMessage error={createGameMutation.error} />
-			) : null}
-		</Card>
-	);
+  const { t } = useTranslation();
+  const createGameMutation = useCreateGame();
+  const createGame = React.useCallback(() => {
+    createGameMutation.mutate();
+  }, [createGameMutation]);
+  return (
+    <Card>
+      <CardBody className="flex flex-col gap-2">
+        <h2 className="text-2xl leading-normal font-semibold">
+          {t("pages.index.createGame.title")}
+        </h2>
+        <Button
+          color={createGameMutation.status === "error" ? "danger" : "primary"}
+          onPress={createGame}
+          isDisabled={
+            createGameMutation.status === "pending" ||
+            createGameMutation.status === "success"
+          }
+          isLoading={createGameMutation.status === "pending"}
+        >
+          {createGameMutation.status === "error"
+            ? t("common.tryAgain")
+            : createGameMutation.status === "success"
+              ? t("pages.index.createGame.success")
+              : t("pages.index.createGame.button")}
+        </Button>
+        {createGameMutation.status === "error" ? (
+          <ErrorMessage error={createGameMutation.error} />
+        ) : null}
+      </CardBody>
+    </Card>
+  );
 });
 
 const JoinGameCard = React.memo(() => {
-	const { t } = useTranslation();
-	const router = useRouter();
-	const [slug, setSlug] = React.useState("");
-	const onChange = React.useCallback<React.ChangeEventHandler<FormElement>>(
-		(e) => setSlug(e.currentTarget.value),
-		[setSlug],
-	);
-	const joinGame = React.useCallback(() => {
-		if (slug.length !== GAMES.TYPES.ID_LENGTH) {
-			return;
-		}
-		router.push(`/game/${slug}`);
-	}, [slug, router]);
-	return (
-		<Card>
-			<Text h2>{t("pages.index.joinGame.title")}</Text>
-			<Input
-				label={t("pages.index.joinGame.inputLabel")}
-				value={slug}
-				onChange={onChange}
-				maxLength={GAMES.TYPES.ID_LENGTH}
-			/>
-			<Spacer y={1} />
-			<Button onClick={joinGame} disabled={!slug}>
-				{t("pages.index.joinGame.button")}
-			</Button>
-		</Card>
-	);
+  const { t } = useTranslation();
+  const router = useRouter();
+  const [slug, setSlug] = React.useState("");
+  const joinGame = React.useCallback(() => {
+    if (slug.length !== GAMES.TYPES.ID_LENGTH) {
+      return;
+    }
+    router.navigate({ to: "/games/$id", params: { id: slug } });
+  }, [slug, router]);
+  return (
+    <Card>
+      <CardBody className="flex flex-col gap-2">
+        <h2 className="text-2xl leading-normal font-semibold">
+          {t("pages.index.joinGame.title")}
+        </h2>
+        <Input
+          label={t("pages.index.joinGame.inputLabel")}
+          value={slug}
+          onValueChange={setSlug}
+          maxLength={GAMES.TYPES.ID_LENGTH}
+          size="sm"
+          labelPlacement="outside"
+          placeholder=" "
+        />
+        <Button color="primary" onPress={joinGame} isDisabled={!slug}>
+          {t("pages.index.joinGame.button")}
+        </Button>
+      </CardBody>
+    </Card>
+  );
 });
 
-const Page = React.memo(() => {
-	const { t } = useTranslation();
-	return (
-		<>
-			<Header />
-			<Text h1>{t("pages.index.title")}</Text>
-			<CreateGameCard />
-			<Spacer y={1} />
-			<JoinGameCard />
-			<Spacer y={1} />
-			<PreviousGamesCard />
-		</>
-	);
-});
-
-export default Page;
+export const Page = React.memo(() => (
+  <div className="flex flex-col gap-4">
+    <Header />
+    <CreateGameCard />
+    <JoinGameCard />
+    <PreviousGamesCard />
+  </div>
+));

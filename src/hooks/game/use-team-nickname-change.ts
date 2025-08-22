@@ -1,47 +1,51 @@
 import React from "react";
 
-import { UsersId } from "@/db/models";
-import { useMutationHook } from "@/hooks/use-mutation-hook";
-import { usePusher } from "@/hooks/use-pusher";
-import { useSelfUserId } from "@/hooks/use-self-user-id";
-import { useUpdateGameCache } from "@/hooks/use-update-cache";
-import { trpc } from "@/lib/trpc";
+import { useMutation } from "@tanstack/react-query";
+
+import { UserContext } from "~/contexts/user-id-context";
+import type { UserId } from "~/db/database.gen";
+import { useSubscription } from "~/hooks/use-subscription";
+import { useUpdateGameCache } from "~/hooks/use-update-cache";
+import { useTRPC } from "~/utils/trpc";
 
 const useChangeTeamNicknameCache = () => {
-	const [updateGameCache, revertGameCache] = useUpdateGameCache();
-	return [
-		React.useCallback(
-			(teamId: UsersId, nickname: string) =>
-				updateGameCache(
-					(game) => void (game.teams[teamId].nickname = nickname),
-				),
-			[updateGameCache],
-		),
-		revertGameCache,
-	] as const;
+  const [updateGameCache] = useUpdateGameCache();
+  return React.useCallback(
+    (teamId: UserId, nickname: string) =>
+      updateGameCache((game) => ({
+        ...game,
+        teams: game.teams[teamId]
+          ? {
+              ...game.teams,
+              [teamId]: { ...game.teams[teamId], nickname },
+            }
+          : game.teams,
+      })),
+    [updateGameCache],
+  );
 };
 
 export const useTeamNicknameChangeMutation = () => {
-	const selfUserId = useSelfUserId();
-	const [changeTeamNicknameCache, revertTeamNicknameCache] =
-		useChangeTeamNicknameCache();
-	return trpc.teams.changeNickname.useMutation(
-		useMutationHook({
-			getKey: () => selfUserId,
-			onMutate: (variables) =>
-				changeTeamNicknameCache(selfUserId, variables.nickname),
-			revert: revertTeamNicknameCache,
-		}),
-	);
+  const trpc = useTRPC();
+  const { id: selfUserId } = React.use(UserContext);
+  const changeTeamNicknameCache = useChangeTeamNicknameCache();
+  const [, invalidateGameCache] = useUpdateGameCache();
+  return useMutation(
+    trpc.teams.changeNickname.mutationOptions({
+      onMutate: (variables) =>
+        changeTeamNicknameCache(selfUserId, variables.nickname),
+      onError: () => invalidateGameCache(),
+    }),
+  );
 };
 
 export const useSubscribeToTeamNicknameChange = () => {
-	const [changeTeamNicknameCache] = useChangeTeamNicknameCache();
-	return usePusher(
-		"team:nickname",
-		React.useCallback(
-			({ userId, nickname }) => changeTeamNicknameCache(userId, nickname),
-			[changeTeamNicknameCache],
-		),
-	);
+  const changeTeamNicknameCache = useChangeTeamNicknameCache();
+  return useSubscription(
+    "team:nickname",
+    React.useCallback(
+      ({ userId, nickname }) => changeTeamNicknameCache(userId, nickname),
+      [changeTeamNicknameCache],
+    ),
+  );
 };

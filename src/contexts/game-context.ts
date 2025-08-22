@@ -1,7 +1,7 @@
 import React from "react";
 
-import { RouterOutput } from "@/lib/trpc";
+import type { RouterOutput } from "~/utils/query";
 
-export type MaybeGame = RouterOutput["games"]["get"];
+export type GameContextType = RouterOutput["games"]["get"];
 
-export const gameContext = React.createContext<MaybeGame>(null);
+export const GameContext = React.createContext<GameContextType>(null);

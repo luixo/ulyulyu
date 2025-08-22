@@ -1,39 +1,42 @@
 import React from "react";
 
-import { Button, Spacer, Text } from "@nextui-org/react";
-import setLanguage from "next-translate/setLanguage";
-import useTranslation from "next-translate/useTranslation";
+import { Button } from "@heroui/react";
+import { useTranslation } from "react-i18next";
+import { keys } from "remeda";
 
-import { Flex } from "@/components/base/flex";
+import { type Language, languages, setCookieLanguage } from "~/utils/i18n";
 
-import i18n from "@/../i18n.json";
-
-const LOCALE_NAMES: Partial<Record<string, string>> = {
-	ru: "Русский",
-	en: "English",
+const LOCALE_NAMES: Partial<Record<Language, string>> = {
+  ru: "Русский",
+  en: "English",
 };
 
-const Language = React.memo<{ locale: string }>(({ locale }) => {
-	const { lang } = useTranslation();
-	const changeLanguage = React.useCallback(() => setLanguage(locale), [locale]);
-	return (
-		<Button onClick={changeLanguage} disabled={locale === lang}>
-			{LOCALE_NAMES[locale] ?? "unknown"}
-		</Button>
-	);
+const Language = React.memo<{ lang: Language }>(({ lang }) => {
+  const { i18n } = useTranslation();
+  const changeLanguage = React.useCallback(() => {
+    i18n.changeLanguage(lang);
+    setCookieLanguage(lang);
+  }, [i18n, lang]);
+  return (
+    <Button color="primary" onPress={changeLanguage}>
+      {LOCALE_NAMES[lang] ?? "unknown"}
+    </Button>
+  );
 });
 
 export const LangSwitcher = React.memo(() => {
-	const { t } = useTranslation();
-	return (
-		<Flex crossAxis="center" mainAxis="end" direction="column">
-			<Text h3>{t("settings.langSwitcher.title")}</Text>
-			{i18n.locales.map((locale) => (
-				<React.Fragment key={locale}>
-					<Spacer y={0.5} />
-					<Language locale={locale} />
-				</React.Fragment>
-			))}
-		</Flex>
-	);
+  const { t } = useTranslation();
+  const { i18n } = useTranslation();
+  return (
+    <div className="flex flex-col items-center justify-center gap-2">
+      <h3 className="text-xl">{t("settings.langSwitcher.title")}</h3>
+      <div className="flex flex-col gap-1">
+        {keys(languages)
+          .filter((lang) => lang !== i18n.language)
+          .map((lang) => (
+            <Language key={lang} lang={lang} />
+          ))}
+      </div>
+    </div>
+  );
 });

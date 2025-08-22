@@ -1,68 +1,59 @@
 import React from "react";
 
-import { useWordPositions } from "@/hooks/game/use-word-positions";
-import { Game, useGame } from "@/hooks/use-game";
-import { useMutationHook } from "@/hooks/use-mutation-hook";
-import { usePusher } from "@/hooks/use-pusher";
-import { useUpdateGameCache } from "@/hooks/use-update-cache";
-import { trpc } from "@/lib/trpc";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { keys } from "remeda";
 
-type State = Game["state"];
-
-const useChangeGameStateCache = () => {
-	const [updateGameCache, revertGameCache] = useUpdateGameCache();
-	return [
-		React.useCallback(
-			(nextState: State) =>
-				updateGameCache((game) => {
-					game.state = nextState;
-				}),
-			[updateGameCache],
-		),
-		revertGameCache,
-	] as const;
-};
+import { useChangeGameStateCache } from "~/hooks/game/use-game-state";
+import { useWordPositions } from "~/hooks/game/use-word-positions";
+import { useGame } from "~/hooks/use-game";
+import { useSubscription } from "~/hooks/use-subscription";
+import { useUpdateGameCache } from "~/hooks/use-update-cache";
+import { useTRPC } from "~/utils/trpc";
 
 export const useStartGameMutation = () => {
-	const { firstWordPosition } = useWordPositions();
-	const [changeGameStateCache, revertGameCache] = useChangeGameStateCache();
-	return trpc.games.start.useMutation(
-		useMutationHook({
-			onMutate: () =>
-				changeGameStateCache({
-					phase: "proposal",
-					currentPosition: firstWordPosition,
-				}),
-			revert: revertGameCache,
-		}),
-	);
+  const trpc = useTRPC();
+  const { firstWordPosition } = useWordPositions();
+  const changeGameStateCache = useChangeGameStateCache();
+  const [, invalidateGameCache] = useUpdateGameCache();
+  return useMutation(
+    trpc.games.start.mutationOptions({
+      onMutate: () =>
+        changeGameStateCache({
+          phase: "proposal",
+          currentPosition: firstWordPosition,
+        }),
+      onError: () => invalidateGameCache(),
+    }),
+  );
 };
 
 export const useSubscribeToGameStart = () => {
-	const { teams } = useGame();
-	const { firstWordPosition } = useWordPositions();
-	const trpcUtils = trpc.useUtils();
-	const [changeGameStateCache] = useChangeGameStateCache();
-	return usePusher(
-		"game:start",
-		React.useCallback(
-			({ teamIds }) => {
-				const expectedTeamIds = teamIds.toSorted();
-				const actualTeamIds = Object.keys(teams).toSorted();
-				if (
-					expectedTeamIds.length !== actualTeamIds.length ||
-					actualTeamIds.some(
-						(teamId, index) => teamId !== expectedTeamIds[index],
-					)
-				) {
-					void trpcUtils.games.get.invalidate();
-				}
-				changeGameStateCache({
-					phase: "proposal",
-					currentPosition: firstWordPosition,
-				});
-			},
-			[changeGameStateCache, firstWordPosition, teams, trpcUtils.games.get],
-		),
-	);
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const { teams, id } = useGame();
+  const { firstWordPosition } = useWordPositions();
+  const changeGameStateCache = useChangeGameStateCache();
+  const gameFilter = trpc.games.get.queryFilter({ id });
+  return useSubscription(
+    "game:start",
+    React.useCallback(
+      ({ teamIds }) => {
+        const expectedTeamIds = teamIds.toSorted();
+        const actualTeamIds = keys(teams).toSorted();
+        if (
+          expectedTeamIds.length !== actualTeamIds.length ||
+          actualTeamIds.some(
+            (teamId, index) => teamId !== expectedTeamIds[index],
+          )
+        ) {
+          queryClient.invalidateQueries(gameFilter);
+        }
+        changeGameStateCache({
+          phase: "proposal",
+          currentPosition: firstWordPosition,
+        });
+      },
+      [changeGameStateCache, firstWordPosition, gameFilter, queryClient, teams],
+    ),
+  );
 };

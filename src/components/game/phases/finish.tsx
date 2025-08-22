@@ -1,244 +1,419 @@
+"use client";
+
 import React from "react";
 
 import {
-	Button,
-	CSS,
-	Loading,
-	Spacer,
-	Table,
-	styled,
-	useAsyncList,
-} from "@nextui-org/react";
-import type { AsyncListOptions } from "@react-stately/data";
-import { useRouter } from "next/router";
-import useTranslation from "next-translate/useTranslation";
-import { IoIosCheckmark as CheckIcon } from "react-icons/io";
+  Button,
+  Modal,
+  ModalBody,
+  ModalContent,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from "@heroui/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+import { IoCheckmark as CheckIcon } from "react-icons/io5";
+import { entries, isNonNullish, values } from "remeda";
+import { twMerge } from "tailwind-merge";
 
-import { ErrorMessage } from "@/components/error-message";
-import { UsersId, WordsId } from "@/db/models";
-import { useCreateGame } from "@/hooks/use-create-game";
-import { Game, useGame } from "@/hooks/use-game";
-import { useSelfUserId } from "@/hooks/use-self-user-id";
-import { trpc } from "@/lib/trpc";
-import { nonNullishGuard } from "@/lib/utils";
+import { ErrorMessage } from "~/components/error-message";
+import { ResultCard } from "~/components/game/result-card";
+import { suspendedFallback } from "~/components/suspense-wrapper";
+import { UserContext } from "~/contexts/user-id-context";
+import type { UserId } from "~/db/database.gen";
+import { useCreateGame } from "~/hooks/use-create-game";
+import type { Game } from "~/hooks/use-game";
+import { useGame } from "~/hooks/use-game";
+import type { RouterOutput } from "~/utils/query";
+import { useTRPC } from "~/utils/trpc";
 
-const columnCss: CSS = { whiteSpace: "break-spaces", textAlign: "center" };
-const nameColumnCss: CSS = {
-	...columnCss,
-	textAlign: "right",
+type GuessingData =
+  | RouterOutput["definitions"]["getAdminGuessing"]
+  | RouterOutput["definitions"]["getPlayerGuessing"];
+
+const ResultCell = React.memo<{
+  definition: string;
+  voters: { id: UserId; nickname: string }[];
+  selfVoteCorrect: boolean;
+}>(({ definition, voters, selfVoteCorrect }) => (
+  <div className="max-h-52 w-52 overflow-y-scroll text-center">
+    <div className="flex gap-1">
+      {(selfVoteCorrect ? [...voters, selfVoteCorrect] : voters).map(
+        (voter) => (
+          <div
+            key={typeof voter === "boolean" ? "correct" : voter.id}
+            title={
+              typeof voter === "boolean"
+                ? "Correct vote"
+                : `Voted by ${voter.nickname}`
+            }
+            className="flex h-3 w-3 shrink-0 items-center justify-center"
+          >
+            <CheckIcon
+              className={twMerge(
+                "text-background rounded-full",
+                typeof voter === "boolean" ? "bg-success" : "bg-secondary",
+              )}
+              size={12}
+            />
+          </div>
+        ),
+      )}
+    </div>
+    {definition}
+  </div>
+));
+
+const useItems = (data: GuessingData) => {
+  const { isOwner, teams, words } = useGame();
+  const { id: selfUserId } = React.use(UserContext);
+  return React.useMemo(
+    () =>
+      [
+        ...entries(teams).sort(([teamAId], [teamBId]) => {
+          if (teamAId === selfUserId) {
+            return -1;
+          }
+          if (teamBId === selfUserId) {
+            return 1;
+          }
+          return teamAId.localeCompare(teamBId);
+        }),
+        [null, { nickname: undefined }] as const,
+      ].map(([teamId, team]) => ({
+        id: teamId,
+        nickname: team.nickname,
+        definitions: entries(words).map(([wordId, word]) => {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          const wordDefinition = data[wordId]!;
+          if (!("revealMap" in wordDefinition) || !wordDefinition.revealMap) {
+            throw new Error(
+              `Expected to have reveal map for word "${word.term}" (id "${wordId}")`,
+            );
+          }
+          const revealValues = values(wordDefinition.revealMap);
+          const selfVote = revealValues.find(
+            (value) => value && value.id === teamId,
+          );
+          const selfVoteCorrect = selfVote ? selfVote.vote === null : false;
+          const voters = revealValues
+            .filter((value) => (value ? value.vote === teamId : null))
+            .filter(isNonNullish)
+            .map((value) => ({
+              id: value.id,
+              nickname: teams[value.id]?.nickname ?? "unknown",
+            }));
+          if (isOwner) {
+            if (!("originalDefinition" in wordDefinition)) {
+              throw new Error(
+                `Expected to have voters for word "${word.term}" (id "${wordId}")`,
+              );
+            }
+            return {
+              id: wordId,
+              definition:
+                teamId === null
+                  ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    word.definition!
+                  : wordDefinition.definitions[teamId],
+              voters,
+              selfVoteCorrect,
+            };
+          }
+          if (!selfUserId) {
+            throw new Error(
+              `Expected to have selfUserId as not an owner of the game`,
+            );
+          }
+          const revealData = entries(wordDefinition.revealMap).find(
+            ([, revealDatum]) =>
+              (revealDatum ? revealDatum.id : null) === teamId,
+          );
+          if (!revealData) {
+            throw new Error(
+              `Expected to have reveal map for team "${team.nickname}" (id "${teamId}")`,
+            );
+          }
+          const [obfuscatedTeamId] = revealData;
+          return {
+            id: wordId,
+            definition:
+              selfUserId === teamId
+                ? word.definition
+                : (wordDefinition.definitions as Record<string, string>)[
+                    obfuscatedTeamId
+                  ],
+            voters,
+            selfVoteCorrect,
+          };
+        }),
+      })),
+    [teams, words, isOwner, selfUserId, data],
+  );
 };
 
-const Checks = styled("div", {
-	display: "flex",
-});
+const getColumns = (
+  words: Game["words"],
+): [string, { term: string; firstColumn?: boolean }][] => [
+  ["*", { term: "*" }],
+  ...entries(words).sort(
+    ([, wordA], [, wordB]) => wordA.position - wordB.position,
+  ),
+];
 
-const CheckWrapper = styled("div", {
-	size: 12,
-	backgroundColor: "$success",
-	display: "flex",
-	flexShrink: 0,
-	alignItems: "center",
-	justifyContent: "center",
-	borderRadius: "$rounded",
-	color: "$background",
-});
-
-type DefinitionColumn = {
-	id: WordsId;
-	definition: string;
-	voters: UsersId[];
-};
-
-type DefinitionsRow = {
-	id: UsersId | null;
-	nickname: string;
-	definitions: DefinitionColumn[];
-};
-
-const ResultsHeader = React.memo(() => {
-	const { words } = useGame();
-	const columns: [string, { term: string; stickRight?: boolean }][] = [
-		["*", { term: "*" }],
-		...Object.entries(words),
-	];
-	return (
-		<Table.Header columns={columns}>
-			{([wordId, { term, stickRight }]) => (
-				<Table.Column key={wordId} css={stickRight ? nameColumnCss : columnCss}>
-					{term}
-				</Table.Column>
-			)}
-		</Table.Header>
-	);
-});
-
-const ResultCell = React.memo<{ definition: string; voters: UsersId[] }>(
-	({ definition, voters }) => (
-		<Checks>
-			{definition}
-			{voters.map((voter) => (
-				<React.Fragment key={voter}>
-					<Spacer x={0.3} />
-					<CheckWrapper>
-						<CheckIcon size={10} />
-					</CheckWrapper>
-				</React.Fragment>
-			))}
-		</Checks>
-	),
-);
-
-const ResultRow = React.memo<{ data: DefinitionsRow }>(
-	({ data: { id: teamId, nickname, definitions } }) => (
-		<Table.Row key={teamId}>
-			<Table.Cell css={nameColumnCss}>{nickname}</Table.Cell>
-			{definitions.map(({ id: wordId, definition, voters }) => (
-				<Table.Cell css={columnCss} key={wordId}>
-					<ResultCell definition={definition} voters={voters} />
-				</Table.Cell>
-			))}
-		</Table.Row>
-	),
+const ResultsTable = suspendedFallback(
+  () => {
+    const trpc = useTRPC();
+    const { id: gameId, isOwner } = useGame();
+    const { data: guessing } = isOwner
+      ? useSuspenseQuery(
+          trpc.definitions.getAdminGuessing.queryOptions({ gameId }),
+        )
+      : useSuspenseQuery(
+          trpc.definitions.getPlayerGuessing.queryOptions({ gameId }),
+        );
+    const { t } = useTranslation();
+    const { words, teams } = useGame();
+    const columns = React.useMemo(() => getColumns(words), [words]);
+    const items = useItems(guessing);
+    const { id: selfUserId } = React.use(UserContext);
+    const [selectedCell, setSelectedCell] = React.useState<
+      | ((typeof items)[number]["definitions"][number] & {
+          team: {
+            id: UserId;
+            nickname: string;
+          } | null;
+        })
+      | undefined
+    >();
+    return (
+      <>
+        <Table aria-label="Results" isStriped>
+          <TableHeader columns={columns}>
+            {([wordId, { term, firstColumn }]) => (
+              <TableColumn
+                key={wordId}
+                className={firstColumn ? "text-left" : "text-center"}
+              >
+                {term}
+              </TableColumn>
+            )}
+          </TableHeader>
+          <TableBody items={items}>
+            {({ id: teamId, nickname, definitions }) => (
+              <TableRow key={teamId}>
+                {(columnKey) => {
+                  const tableCellClass =
+                    teamId === selfUserId
+                      ? "before:bg-content4 before:opacity-100"
+                      : undefined;
+                  if (columnKey === "*") {
+                    return (
+                      <TableCell
+                        className={twMerge(
+                          "overflow-hidden text-right",
+                          tableCellClass,
+                        )}
+                      >
+                        {nickname
+                          ? t("pages.finish.rowName", {
+                              team: nickname,
+                              points: t("points", {
+                                count: definitions.reduce(
+                                  (acc, definition) =>
+                                    acc +
+                                    definition.voters.length +
+                                    (definition.selfVoteCorrect ? 1 : 0),
+                                  0,
+                                ),
+                              }),
+                            })
+                          : t("pages.finish.actualTeamNickname")}
+                      </TableCell>
+                    );
+                  }
+                  const cellDefinition =
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    definitions.find(({ id }) => id === columnKey)!;
+                  const { definition, voters, selfVoteCorrect } =
+                    cellDefinition;
+                  return (
+                    <TableCell
+                      className={twMerge(
+                        "cursor-pointer overflow-hidden text-center",
+                        tableCellClass,
+                      )}
+                      onClick={() => {
+                        setSelectedCell({
+                          ...cellDefinition,
+                          team:
+                            teamId && nickname
+                              ? { id: teamId, nickname }
+                              : null,
+                        });
+                      }}
+                    >
+                      <ResultCell
+                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                        definition={definition!}
+                        voters={teamId ? voters : []}
+                        selfVoteCorrect={teamId ? selfVoteCorrect : false}
+                      />
+                    </TableCell>
+                  );
+                }}
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+        <Modal
+          isOpen={Boolean(selectedCell)}
+          onOpenChange={() => setSelectedCell(undefined)}
+          placement="center"
+          hideCloseButton
+        >
+          <ModalContent>
+            <ModalBody className="p-0">
+              {selectedCell ? (
+                <ResultCard
+                  title={
+                    selectedCell.team
+                      ? selectedCell.team.nickname
+                      : t("pages.finish.actualTeamNickname")
+                  }
+                  footer={
+                    <div className="flex flex-col gap-1">
+                      {selectedCell.selfVoteCorrect ? (
+                        <span className="text-success">
+                          {t("pages.guessing.owner.successfulVote")}
+                        </span>
+                      ) : null}
+                      {selectedCell.voters.length !== 0 ? (
+                        <i className="text-secondary">
+                          {t("pages.guessing.owner.otherVote", {
+                            count: selectedCell.voters.length,
+                            teams: selectedCell.voters
+                              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                              .map((team) => `"${teams[team.id]!.nickname}"`)
+                              .join(", "),
+                          })}
+                        </i>
+                      ) : null}
+                    </div>
+                  }
+                >
+                  <span>{selectedCell.definition}</span>
+                </ResultCard>
+              ) : null}
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      </>
+    );
+  },
+  () => {
+    const { t } = useTranslation();
+    const { words, teams } = useGame();
+    const columns = React.useMemo(() => getColumns(words), [words]);
+    const items = React.useMemo(
+      () => [
+        ...entries(teams).map(([teamId, team]) => ({
+          teamId,
+          team,
+        })),
+        { teamId: null, team: null },
+      ],
+      [teams],
+    );
+    return (
+      <Table isStriped>
+        <TableHeader columns={columns}>
+          {([wordId, { term, firstColumn }]) => (
+            <TableColumn
+              key={wordId}
+              className={firstColumn ? "text-left" : "text-center"}
+            >
+              {term}
+            </TableColumn>
+          )}
+        </TableHeader>
+        <TableBody items={items}>
+          {(item) => (
+            <TableRow key={item.teamId}>
+              {(columnKey) => (
+                <TableCell
+                  className={columnKey === "*" ? "text-right" : undefined}
+                >
+                  {columnKey === "*" ? (
+                    (item.team?.nickname ??
+                    t("pages.finish.actualTeamNickname"))
+                  ) : (
+                    <Skeleton className="h-24 w-48 rounded-md" />
+                  )}
+                </TableCell>
+              )}
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    );
+  },
 );
 
 const StartNewGameButton = React.memo(() => {
-	const { t } = useTranslation();
-	const createGameMutation = useCreateGame();
-	const createGame = React.useCallback(() => {
-		createGameMutation.mutate();
-	}, [createGameMutation]);
-	return (
-		<>
-			<Button
-				onClick={createGame}
-				disabled={
-					createGameMutation.status === "loading" ||
-					createGameMutation.status === "success"
-				}
-				color={createGameMutation.status === "error" ? "error" : undefined}
-			>
-				{createGameMutation.status === "loading" ? (
-					<Loading color="currentColor" size="sm" />
-				) : createGameMutation.status === "error" ? (
-					t("common.tryAgain")
-				) : createGameMutation.status === "success" ? (
-					t("pages.finish.newGame.success")
-				) : (
-					t("pages.finish.newGame.button")
-				)}
-			</Button>
-			{createGameMutation.status === "error" ? (
-				<ErrorMessage error={createGameMutation.error} />
-			) : null}
-		</>
-	);
+  const { t } = useTranslation();
+  const createGameMutation = useCreateGame();
+  const createGame = React.useCallback(() => {
+    createGameMutation.mutate();
+  }, [createGameMutation]);
+  return (
+    <>
+      <Button
+        onPress={createGame}
+        isDisabled={
+          createGameMutation.status === "pending" ||
+          createGameMutation.status === "success"
+        }
+        isLoading={createGameMutation.status === "pending"}
+        color={createGameMutation.status === "error" ? "danger" : "primary"}
+      >
+        {createGameMutation.status === "error"
+          ? t("common.tryAgain")
+          : createGameMutation.status === "success"
+            ? t("pages.finish.newGame.success")
+            : t("pages.finish.newGame.button")}
+      </Button>
+      {createGameMutation.status === "error" ? (
+        <ErrorMessage error={createGameMutation.error} />
+      ) : null}
+    </>
+  );
 });
 
 const ToIndexButton = React.memo(() => {
-	const { t } = useTranslation();
-	const router = useRouter();
-	const toMainPage = React.useCallback(() => router.push("/"), [router]);
-	return <Button onClick={toMainPage}>{t("pages.finish.back.button")}</Button>;
+  const { t } = useTranslation();
+  const router = useRouter();
+  const toMainPage = React.useCallback(
+    () => router.navigate({ to: "/" }),
+    [router],
+  );
+  return <Button onPress={toMainPage}>{t("pages.finish.back.button")}</Button>;
 });
-
-const useLoadData = () => {
-	const { t } = useTranslation();
-	const { id: gameId, words, teams, isOwner } = useGame();
-	const selfUserId = useSelfUserId();
-	const trpcUtils = trpc.useUtils();
-	const definitionQuery =
-		trpcUtils.client.definitions[
-			isOwner ? "getAdminGuessing" : "getPlayerGuessing"
-		].query;
-	return React.useCallback<
-		AsyncListOptions<DefinitionsRow, undefined>["load"]
-	>(async () => {
-		const definitions = await definitionQuery({ gameId });
-		return {
-			items: [
-				...Object.entries(teams),
-				[null, { nickname: t("pages.finish.actualTeamNickname") }] as const,
-			].map(([teamId, team]) => ({
-				id: teamId,
-				nickname: team.nickname,
-				definitions: Object.entries(words).map(([wordId, word]) => {
-					const wordDefinition = definitions[wordId];
-					if (!("revealMap" in wordDefinition) || !wordDefinition.revealMap) {
-						throw new Error(
-							`Expected to have reveal map for word "${word.term}" (id "${wordId}")`,
-						);
-					}
-					const voters = Object.values(wordDefinition.revealMap)
-						.filter((value) => (value ? value.vote === teamId : null))
-						.filter(nonNullishGuard)
-						.map((value) => value.id);
-					if (isOwner) {
-						if (!("originalDefinition" in wordDefinition)) {
-							throw new Error(
-								`Expected to have voters for word "${word.term}" (id "${wordId}")`,
-							);
-						}
-						return {
-							id: wordId,
-							definition:
-								teamId === null
-									? word.definition!
-									: wordDefinition.definitions[teamId],
-							voters,
-						};
-					}
-					if (!selfUserId) {
-						throw new Error(
-							`Expected to have selfUserId as not an owner of the game`,
-						);
-					}
-					const revealData = Object.entries(wordDefinition.revealMap).find(
-						([, revealDatum]) =>
-							(revealDatum ? revealDatum.id : null) === teamId,
-					);
-					if (!revealData) {
-						throw new Error(
-							`Expected to have reveal map for team "${team.nickname}" (id "${teamId}")`,
-						);
-					}
-					const [obfuscatedTeamId] = revealData;
-					return {
-						id: wordId,
-						definition: (wordDefinition.definitions as Record<string, string>)[
-							obfuscatedTeamId
-						],
-						voters,
-					};
-				}),
-			})),
-			cursor: undefined,
-		};
-	}, [t, gameId, teams, words, isOwner, definitionQuery, selfUserId]);
-};
 
 type Props = {
-	state: Extract<Game["state"], { phase: "finish" }>;
+  state: Extract<Game["state"], { phase: "finish" }>;
 };
 
-export const FinishPhase = React.memo<Props>(() => {
-	const list = useAsyncList({ load: useLoadData() });
-	return (
-		<>
-			<Spacer y={1} />
-			{list.loadingState === "error" ? (
-				<ErrorMessage error={list.error} />
-			) : (
-				<Table aria-label="Results">
-					<ResultsHeader />
-					<Table.Body items={list.items} loadingState={list.loadingState}>
-						{(data) => <ResultRow data={data} />}
-					</Table.Body>
-				</Table>
-			)}
-			<Spacer y={1} />
-			<StartNewGameButton />
-			<Spacer y={1} />
-			<ToIndexButton />
-		</>
-	);
-});
+export const FinishPhase: React.FC<Props> = () => (
+  <div className="flex flex-col gap-2">
+    <ResultsTable />
+    <StartNewGameButton />
+    <ToIndexButton />
+  </div>
+);

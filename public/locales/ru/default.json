@@ -1,0 +1,135 @@
+{
+  "common": {
+    "tryAgain": "Еще раз",
+    "error": "Ошибка: {{error}}"
+  },
+  "settings": {
+    "title": "Настройки",
+    "langSwitcher": {
+      "title": "Выбор языка"
+    }
+  },
+  "accountSettings": {
+    "title": "Настройки аккаунта"
+  },
+  "points_one": "{{count}} очко",
+  "points_few": "{{count}} очка",
+  "points_many": "{{count}} очков",
+  "points_other": "{{count}} очков",
+  "pages": {
+    "index": {
+      "title": "Игра «Улюлю»",
+      "createGame": {
+        "title": "Создашь игру?",
+        "button": "Создать игру",
+        "success": "Игра создана! Минуту, перенаправляем.."
+      },
+      "joinGame": {
+        "title": "..или присоединишься?",
+        "inputLabel": "ID игры",
+        "button": "Присоединиться к игре"
+      },
+      "resumeGame": {
+        "title": "..или посмотришь результаты одной из предыдущих?",
+        "button": "Вернуться к игре от {{date}}"
+      }
+    },
+    "game": {
+      "title": "Игра {{id}}",
+      "notFound": "Игра не найдена"
+    },
+    "start": {
+      "words": {
+        "title": "Словарь",
+        "wordInputLabel": "Слово",
+        "definitionInputLabel": "Определение",
+        "saveButton": "Сохранить",
+        "emptyTitle": "В игре пока нет слов"
+      },
+      "teams": {
+        "title": "Команды",
+        "placeholder": "Акульи ульи",
+        "joinInputLabel": "Вступить в игру",
+        "joinButton": "Вступить",
+        "readyPrompt": "Готовы?"
+      },
+      "readiness": {
+        "title": "Готовность команд",
+        "leaveButton": "Покинуть"
+      },
+      "emptyTitle": "В игре пока нет команд",
+      "startButton": {
+        "text": "Поехали!",
+        "errors": {
+          "noTeams": "Нельзя начать игру без команд",
+          "noWords": "Нельзя начать игру без слов"
+        }
+      }
+    },
+    "proposal": {
+      "owner": {
+        "termLabel": "{{term}}",
+        "definitionMask": "*****"
+      },
+      "player": {
+        "termLabel": "{{term}}"
+      }
+    },
+    "guessing": {
+      "teamLabelRevealed": "Команда {{team}}: {{points}}",
+      "owner": {
+        "definitionMask": "*****",
+        "actualDefinition": "Настоящее определение",
+        "failedVote": "Проголосовала за команду \"{{team}}\"",
+        "successfulVote": "Голосование корректно!",
+        "otherVote_one": "Выбран командой {{teams}}",
+        "otherVote_few": "Выбран командами {{teams}}",
+        "otherVote_many": "Выбран командами {{teams}}",
+        "otherVote_other": "Выбран командами {{teams}}"
+      },
+      "player": {
+        "guessDefinition": "{{definition}}",
+        "selfDefinition": "Наше определение",
+        "originalDefinition": "На самом деле",
+        "foreignDefinition": "Команда \"{{team}}\"",
+        "correctVote": "Мы проголосовали неправильно!",
+        "foreignVotedForUs": "Они поверили в наше определение!",
+        "foreignVotedForThem": " Мы поверили в их определение!",
+        "bilateralVote": " Мы поверили в определения друг друга!"
+      }
+    },
+    "finish": {
+      "actualTeamNickname": "Настоящее определение",
+      "rowName": "{{team}} ({{points}})",
+      "newGame": {
+        "button": "Начать новую игру",
+        "success": "Игра создана! Минуту, перенаправляем.."
+      },
+      "back": {
+        "button": "На главную"
+      }
+    }
+  },
+  "components": {
+    "readiness": {
+      "title": "Готовность команд",
+      "noTeamError": "Нет команды {{id}}",
+      "teamLabel": "Команда {{team}}"
+    },
+    "nextPhase": {
+      "button": "Дальше"
+    },
+    "withWord": {
+      "noWordError": "Нет слова на позиции {{position}}"
+    },
+    "withDefinition": {
+      "noDefinitionError": "Нет определения для слова {{id}}"
+    },
+    "withTeam": {
+      "noTeamError": "Нет команды {{id}}"
+    },
+    "wordTracker": {
+      "title": "Слово {{index}} из {{total}}"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+import type { Games, UserId, WordId } from "~/db/database.gen";
+
+export type SubscriptionMapping = {
+  "game:state": {
+    state: Games["state"];
+  };
+  "game:currentPosition": {
+    currentPosition: number;
+  };
+  "game:start": {
+    teamIds: UserId[];
+  };
+  "team:join": {
+    userId: UserId;
+    nickname: string;
+  };
+  "team:leave": {
+    userId: UserId;
+  };
+  "team:readiness": {
+    userId: UserId;
+    ready: boolean;
+  };
+  "team:nickname": {
+    userId: UserId;
+    nickname: string;
+  };
+  "word:add": {
+    id: WordId;
+    position: number;
+    term: string;
+    definition: string;
+  };
+  "word:remove": {
+    id: WordId;
+  };
+  "word:term-update": {
+    wordId: WordId;
+    term: string;
+  };
+  "definition:ready": {
+    wordId: WordId;
+    teamId: UserId;
+    ready: boolean;
+  };
+  "guessing:ready": {
+    wordId: WordId;
+    teamId: UserId;
+    ready: boolean;
+  };
+  "guessing:reveal": {
+    wordId: WordId;
+    mapping: Record<string, null | { id: UserId; vote: UserId | null }>;
+  };
+};
