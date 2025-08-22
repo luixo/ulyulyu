@@ -6,7 +6,7 @@
   "scripts": {
     "build": "vite build",
     "db:generate": "kysely-codegen",
-    "db:migrate": "kysely migrate up --experimental-resolve-tsconfig-paths",
+    "db:migrate": "kysely migrate latest --experimental-resolve-tsconfig-paths",
     "dev": "vite dev",
     "format": "prettier --write .",
     "lint": "eslint --max-warnings=0",
