@@ -1,11 +1,11 @@
 import React from "react";
 
+import type { upsertUser } from "~/server/user";
 import type { UserId } from "~/server/validation";
-import type { RouterOutput } from "~/utils/query";
 
-export const UserContext = React.createContext<RouterOutput["users"]["upsert"]>(
-  {
-    id: "unknown" as UserId,
-    name: "unknown",
-  },
-);
+export const UserContext = React.createContext<
+  Awaited<ReturnType<typeof upsertUser>>
+>({
+  id: "unknown" as UserId,
+  name: "unknown",
+});

@@ -4,9 +4,8 @@ import { Button, Tooltip } from "@heroui/react";
 
 import { UserContext } from "~/contexts/user-id-context";
 import { getAvatar } from "~/utils/names";
-import type { RouterOutput } from "~/utils/query";
 
-const UserButton = React.memo<{ user: RouterOutput["users"]["upsert"] }>(
+const UserButton = React.memo<{ user: React.ContextType<typeof UserContext> }>(
   ({ user }) => {
     const avatar = getAvatar(user.id, null, user.name);
     return (

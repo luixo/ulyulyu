@@ -11,6 +11,7 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from "@tanstack/react-router";
+import { serverOnly } from "@tanstack/react-start";
 import { createTRPCClient } from "@trpc/client";
 import type { i18n } from "i18next";
 import { useSessionStorage } from "usehooks-ts";
@@ -19,13 +20,13 @@ import { z } from "zod";
 import { Devtools } from "~/components/devtools";
 import { SessionContext } from "~/contexts/session-context";
 import { UserContext } from "~/contexts/user-id-context";
+import { getDatabase } from "~/db";
 import { getAuthCookie } from "~/server/auth";
 import type { AppRouter } from "~/server/router";
 import type { UserId } from "~/server/validation";
 import appCss from "~/styles/app.css?url";
 import { SESSION_ID_HEADER, SESSION_ID_KEY } from "~/utils/auth";
 import type { Language } from "~/utils/i18n";
-import { getTrpcClient } from "~/utils/ssr";
 import { TRPCProvider, getLinks } from "~/utils/trpc";
 
 const RootComponent = () => {
@@ -86,16 +87,21 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     debug: z.coerce.boolean().optional().catch(false),
   }),
   loader: async ({ context }) => {
-    const { queryClient, i18n, userId } = context;
-    const i18nPromise = i18n.instance
+    const { i18n, userId } = context;
+    await i18n.instance
       .init({ lng: i18n.initialLanguage })
       .then(() => i18n.instance.loadNamespaces("default"));
-    const trpc = getTrpcClient(context);
-    const [user] = await Promise.all([
-      queryClient.fetchQuery(trpc.users.upsert.queryOptions({ id: userId })),
-      i18nPromise,
-    ]);
-    return { user };
+    const user = await serverOnly(async () => {
+      const db = getDatabase();
+      return await db
+        .selectFrom("users")
+        .where("id", "=", userId)
+        .select(["id", "name"])
+        .executeTakeFirst();
+    })();
+    return {
+      user: user || { name: "never-happen", id: "never-happen" as UserId },
+    };
   },
   component: RootComponent,
   head: () => ({

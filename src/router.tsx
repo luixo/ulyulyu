@@ -16,6 +16,7 @@ import { clone } from "remeda";
 import { DefaultCatchBoundary } from "~/components/default-catch-boundary";
 import { NotFound } from "~/components/not-found";
 import { getSetAuthCookie } from "~/server/auth";
+import { upsertUser } from "~/server/user";
 import type { UserId } from "~/server/validation";
 import { USER_ID_COOKIE } from "~/utils/auth";
 import {
@@ -33,14 +34,17 @@ const getUserId = (request: Request | null) => {
   const cookies = parse(
     request ? request.headers.get("cookie") || "" : document.cookie,
   );
-  const randomKey =
-    typeof window === "undefined"
-      ? crypto.randomUUID()
-      : window.crypto.randomUUID();
-  return (cookies[USER_ID_COOKIE] ?? randomKey) as UserId;
+  if (!cookies[USER_ID_COOKIE]) {
+    if (typeof window === "undefined") {
+      return crypto.randomUUID() as UserId;
+    } else {
+      throw new Error("Client should always have user cookie!");
+    }
+  }
+  return cookies[USER_ID_COOKIE] as UserId;
 };
 
-export const createRouter = () => {
+export const createRouter = async () => {
   const request = import.meta.env.SSR ? serverOnly(getWebRequest)() : null;
   const queryClient = new QueryClient(queryClientConfig);
   const i18nInstance = i18n
@@ -51,7 +55,9 @@ export const createRouter = () => {
 
   const userId = getUserId(request);
   if (import.meta.env.SSR) {
-    serverOnly(() => {
+    await serverOnly(async () => {
+      const request = getWebRequest();
+      await upsertUser(userId, request.headers.get("user-agent") || "unknown");
       setResponseHeader("set-cookie", getSetAuthCookie(userId));
     })();
   }
@@ -109,6 +115,6 @@ export const createRouter = () => {
 declare module "@tanstack/react-router" {
   // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Register {
-    router: ReturnType<typeof createRouter>;
+    router: Awaited<ReturnType<typeof createRouter>>;
   }
 }

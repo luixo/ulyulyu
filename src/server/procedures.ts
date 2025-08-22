@@ -1,11 +1,10 @@
 import { TRPCError } from "@trpc/server";
 import { parse } from "cookie";
-import { v4 } from "uuid";
 
-import { getDatabase } from "~/db";
 import type { UserId } from "~/db/database.gen";
 import { extendAuthCookie } from "~/server/auth";
 import { middleware, procedure } from "~/server/trpc";
+import { upsertUser } from "~/server/user";
 import { userIdSchema } from "~/server/validation";
 import { SESSION_ID_HEADER, USER_ID_COOKIE } from "~/utils/auth";
 
@@ -40,36 +39,16 @@ export const authProcedure = unauthProcedure.use(
       });
     }
     const sessionId = ctx.req.headers.get(SESSION_ID_HEADER) || "unknown";
-    const database = getDatabase();
-    const user = await database
-      .selectFrom("users")
-      .where("users.id", "=", userIdCookie)
-      .select("users.id")
-      .executeTakeFirst();
-    let userId = user?.id;
-    if (!userId) {
-      userId = v4() as UserId;
-      await database
-        .insertInto("users")
-        .values({
-          id: userId,
-          lastActiveTimestamp: new Date(),
-        })
-        .returning(["users.id", "users.name"])
-        .executeTakeFirst();
-    } else {
-      void database
-        .updateTable("users")
-        .where("users.id", "=", userId)
-        .set({ lastActiveTimestamp: new Date() })
-        .executeTakeFirst();
-    }
-    extendAuthCookie(ctx.resHeaders, userId);
+    const user = await upsertUser(
+      userIdCookie,
+      ctx.req.headers.get("user-agent") || "unknown",
+    );
+    extendAuthCookie(ctx.resHeaders, user.id);
     return next({
       ctx: {
         ...ctx,
         auth: {
-          userId: userId as UserId,
+          userId: user.id,
           sessionId,
         },
       },

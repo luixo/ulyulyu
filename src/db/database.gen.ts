@@ -14,14 +14,16 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface Definitions {
+  createdAt: Generated<Timestamp>;
   definition: string | null;
   guessUserId: UserId | null;
+  updatedAt: Generated<Timestamp>;
   userId: UserId;
   wordId: WordId;
 }
 
 export interface Games {
-  createdAt: Timestamp;
+  createdAt: Generated<Timestamp>;
   id: GameId;
   ownerId: UserId;
   state: {
@@ -35,28 +37,36 @@ export interface Games {
 } | {
   phase: "finish";
 };
+  updatedAt: Generated<Timestamp>;
 }
 
 export interface Teams {
+  createdAt: Generated<Timestamp>;
   gameId: GameId;
   nickname: string;
   ready: boolean;
+  updatedAt: Generated<Timestamp>;
   userId: UserId;
 }
 
 export interface Users {
+  createdAt: Generated<Timestamp>;
   id: UserId;
   lastActiveTimestamp: Timestamp;
   name: string | null;
+  updatedAt: Generated<Timestamp>;
+  userAgent: Generated<string>;
 }
 
 export interface Words {
+  createdAt: Generated<Timestamp>;
   definition: string;
   gameId: GameId;
   id: WordId;
   position: number;
   revealed: Generated<boolean>;
   term: string;
+  updatedAt: Generated<Timestamp>;
 }
 
 export interface DB {

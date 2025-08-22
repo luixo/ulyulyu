@@ -7,8 +7,6 @@ export const Route = createFileRoute("/")({
   component: Page,
   loader: async ({ context }) => {
     const trpc = getTrpcClient(context);
-    await Promise.all([
-      context.queryClient.prefetchQuery(trpc.games.getAll.queryOptions()),
-    ]);
+    await context.queryClient.prefetchQuery(trpc.games.getAll.queryOptions());
   },
 });
