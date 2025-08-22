@@ -15,6 +15,9 @@ let pusherInstance: Pusher | undefined;
 const getPusherInstance = (): Pusher => {
   pusherInstance ??= new Pusher(import.meta.env.VITE_PUSHER_APP_KEY ?? "", {
     cluster: import.meta.env.VITE_PUSHER_CLUSTER ?? "",
+    wsHost: import.meta.env.VITE_PUSHER_HOST,
+    forceTLS: true,
+    enabledTransports: ["ws", "wss"],
   });
   return pusherInstance;
 };
