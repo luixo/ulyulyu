@@ -47,14 +47,16 @@ const useUpdateCache = <Output>(
 
 export const useUpdateGamesCache = () => {
   const trpc = useTRPC();
-  return useUpdateCache(trpc.games.getAll.queryFilter());
+  return useUpdateCache(
+    React.useMemo(() => trpc.games.getAll.queryFilter(), [trpc]),
+  );
 };
 
 export const useUpdateGameCache = () => {
   const trpc = useTRPC();
   const { id } = useGame();
   const [updateCache, invalidateCache] = useUpdateCache(
-    trpc.games.get.queryFilter({ id }),
+    React.useMemo(() => trpc.games.get.queryFilter({ id }), [trpc, id]),
   );
   const updateSureCache = React.useCallback(
     (
@@ -76,7 +78,10 @@ export const useUpdateAdminGuessingCache = () => {
   const trpc = useTRPC();
   const { id: gameId } = useGame();
   return useUpdateCache(
-    trpc.definitions.getAdminGuessing.queryFilter({ gameId }),
+    React.useMemo(
+      () => trpc.definitions.getAdminGuessing.queryFilter({ gameId }),
+      [trpc, gameId],
+    ),
   );
 };
 
@@ -84,17 +89,30 @@ export const useUpdatePlayerGuessingCache = () => {
   const trpc = useTRPC();
   const { id: gameId } = useGame();
   return useUpdateCache(
-    trpc.definitions.getPlayerGuessing.queryFilter({ gameId }),
+    React.useMemo(
+      () => trpc.definitions.getPlayerGuessing.queryFilter({ gameId }),
+      [trpc, gameId],
+    ),
   );
 };
 
 export const useUpdateAdminDefinitionsCache = () => {
   const trpc = useTRPC();
   const { id: gameId } = useGame();
-  return useUpdateCache(trpc.definitions.getAdmin.queryFilter({ gameId }));
+  return useUpdateCache(
+    React.useMemo(
+      () => trpc.definitions.getAdmin.queryFilter({ gameId }),
+      [trpc, gameId],
+    ),
+  );
 };
 export const useUpdatePlayerDefinitionsCache = () => {
   const trpc = useTRPC();
   const { id: gameId } = useGame();
-  return useUpdateCache(trpc.definitions.getPlayer.queryFilter({ gameId }));
+  return useUpdateCache(
+    React.useMemo(
+      () => trpc.definitions.getPlayer.queryFilter({ gameId }),
+      [trpc, gameId],
+    ),
+  );
 };
