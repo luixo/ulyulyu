@@ -13,7 +13,6 @@ export const upsertUser = async (userId: UserId, userAgent: string) => {
       .insertInto("users")
       .values({
         id: userId,
-        lastActiveTimestamp: new Date(),
         userAgent: userAgent.slice(0, 1024),
       })
       .returning(["users.id", "users.name"])
@@ -23,7 +22,7 @@ export const upsertUser = async (userId: UserId, userAgent: string) => {
     void db
       .updateTable("users")
       .where("users.id", "=", userId)
-      .set({ lastActiveTimestamp: new Date() })
+      .set({ updatedAt: new Date() })
       .executeTakeFirst();
   }
   return user;

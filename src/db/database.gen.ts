@@ -52,7 +52,6 @@ export interface Teams {
 export interface Users {
   createdAt: Generated<Timestamp>;
   id: UserId;
-  lastActiveTimestamp: Timestamp;
   name: string | null;
   updatedAt: Generated<Timestamp>;
   userAgent: Generated<string>;
