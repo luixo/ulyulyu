@@ -26,11 +26,11 @@ import { useTRPC } from "~/utils/trpc";
 
 type Guessing = RouterOutput["definitions"]["getPlayerGuessing"];
 
-const Definition = React.memo<{
+const Definition: React.FC<{
   revealMap: Guessing[WordId]["revealMap"];
   definition: string;
   maskedTeamId: string;
-}>(({ revealMap, maskedTeamId, definition }) => {
+}> = ({ revealMap, maskedTeamId, definition }) => {
   const { t } = useTranslation();
   const { teams } = useGame();
   const revealData = revealMap ? revealMap[maskedTeamId] : undefined;
@@ -50,27 +50,23 @@ const Definition = React.memo<{
       {t("pages.guessing.player.guessDefinition", { definition })}
     </Radio>
   );
-});
+};
 
-const TeamsDefinitions = React.memo<{
+const TeamsDefinitions: React.FC<{
   word: Game["words"][WordId];
   wordId: WordId;
   definitions: Guessing[WordId];
-}>(({ word, wordId, definitions }) => {
+}> = ({ word, wordId, definitions }) => {
   const { id: gameId } = useGame();
 
   const voteMutation = useVoteMutation();
 
-  const vote = React.useCallback(
-    (guessUserId: string) =>
-      voteMutation.mutate({ gameId, wordId, guessUserId }),
-    [voteMutation, wordId, gameId],
-  );
-
   return (
     <RadioGroup
       value={definitions.vote || undefined}
-      onValueChange={vote}
+      onValueChange={(guessUserId: string) =>
+        voteMutation.mutate({ gameId, wordId, guessUserId })
+      }
       isDisabled={Boolean(definitions.revealMap)}
     >
       <Radio value="-" isDisabled classNames={{ labelWrapper: "ml-2" }}>
@@ -86,13 +82,13 @@ const TeamsDefinitions = React.memo<{
       ))}
     </RadioGroup>
   );
-});
+};
 
-const TeamsResults = React.memo<{
+const TeamsResults: React.FC<{
   definitions: Guessing[WordId];
   revealMap: NonNullable<Guessing[WordId]["revealMap"]>;
   selfDefinition: string;
-}>(({ definitions, revealMap, selfDefinition }) => {
+}> = ({ definitions, revealMap, selfDefinition }) => {
   const { t } = useTranslation();
   const { teams } = useGame();
   const { id: selfUserId } = React.use(UserContext);
@@ -189,7 +185,7 @@ const TeamsResults = React.memo<{
       })}
     </>
   );
-});
+};
 
 const TeamsCard = suspendedFallback<Props>(
   ({ wordId, word }) => {

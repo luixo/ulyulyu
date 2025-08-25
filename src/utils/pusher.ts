@@ -3,6 +3,7 @@ import React from "react";
 import type { Channel } from "pusher-js";
 import Pusher from "pusher-js";
 import type { SuperJSONResult } from "superjson";
+import { useEventCallback } from "usehooks-ts";
 
 import { SessionContext } from "~/contexts/session-context";
 import type { GameId } from "~/db/database.gen";
@@ -29,7 +30,7 @@ const channelSubscriptions: Record<
 
 const useChannel = (channelName: string) => {
   const [instance] = React.useState(() => getPusherInstance());
-  return React.useCallback(
+  return useEventCallback(
     (event: string, onData: (data: SuperJSONResult) => void) => {
       if (!channelSubscriptions[channelName]) {
         channelSubscriptions[channelName] = {
@@ -52,7 +53,6 @@ const useChannel = (channelName: string) => {
         }
       };
     },
-    [channelName, instance],
   );
 };
 
@@ -61,7 +61,7 @@ const timestamps: Partial<Record<keyof SubscriptionMapping, number>> = {};
 export const useBindSubscription = (channelName: string) => {
   const ourSessionId = React.use(SessionContext);
   const subscribeChannel = useChannel(channelName);
-  return React.useCallback(
+  return useEventCallback(
     <K extends keyof SubscriptionMapping>(
       event: K,
       onData: (data: SubscriptionMapping[K]) => void,
@@ -82,6 +82,5 @@ export const useBindSubscription = (channelName: string) => {
         timestamps[event] = timestamp;
         onData(deserializedData as unknown as SubscriptionMapping[K]);
       }),
-    [ourSessionId, subscribeChannel],
   );
 };

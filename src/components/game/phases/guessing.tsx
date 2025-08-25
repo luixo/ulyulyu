@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 
 import { Card, CardBody } from "@heroui/react";
 import { entries } from "remeda";
@@ -7,11 +7,9 @@ import { GuessingPhaseOwner } from "~/components/game/guessing/owner";
 import { GuessingPhasePlayer } from "~/components/game/guessing/player";
 import { type Game, useGame } from "~/hooks/use-game";
 
-type Props = {
+export const GuessingPhase: React.FC<{
   state: Extract<Game["state"], { phase: "guessing" }>;
-};
-
-export const GuessingPhase = React.memo<Props>(({ state }) => {
+}> = ({ state }) => {
   const { isOwner, words } = useGame();
   const wordTuple = entries(words).find(
     ([, { position }]) => position === state.currentPosition,
@@ -31,4 +29,4 @@ export const GuessingPhase = React.memo<Props>(({ state }) => {
       </CardBody>
     </Card>
   );
-});
+};

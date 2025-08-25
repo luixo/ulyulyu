@@ -22,10 +22,10 @@ import { useGame } from "~/hooks/use-game";
 import { useReadyAvatarProps } from "~/hooks/use-ready-avatar-props";
 import { useTRPC } from "~/utils/trpc";
 
-const Definition = React.memo<{
+const Definition: React.FC<{
   wordId: WordId;
   word: Game["words"][WordId];
-}>(({ wordId, word }) => {
+}> = ({ wordId, word }) => {
   const { t } = useTranslation();
   const { id: gameId } = useGame();
   const updateDefinitionMutation = useUpdateDefinitionMutation();
@@ -33,49 +33,7 @@ const Definition = React.memo<{
     word.definition || "",
   );
 
-  const saveDefinition = React.useCallback(
-    (nextDefinition: string) => () => {
-      if (
-        word.definition === nextDefinition ||
-        nextDefinition.length < DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH ||
-        nextDefinition.length > DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH
-      ) {
-        return;
-      }
-      updateDefinitionMutation.mutate({
-        gameId,
-        wordId,
-        definition: nextDefinition,
-      });
-    },
-    [gameId, updateDefinitionMutation, wordId, word.definition],
-  );
   const readyAvatarProps = useReadyAvatarProps(true);
-
-  const endContent = React.useMemo(
-    () => (
-      <div className="flex self-end">
-        {localDefinition === word.definition ||
-        localDefinition.length < DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH ||
-        localDefinition.length > DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH ? (
-          word.definition === null ? (
-            // Bug: https://github.com/nextui-org/nextui/issues/2069
-            <div />
-          ) : (
-            <Avatar {...readyAvatarProps} />
-          )
-        ) : (
-          <Button
-            color="primary"
-            onPress={saveDefinition(localDefinition || "")}
-          >
-            {t("pages.start.words.saveButton")}
-          </Button>
-        )}
-      </div>
-    ),
-    [localDefinition, word.definition, saveDefinition, readyAvatarProps, t],
-  );
 
   return (
     <div className="relative flex">
@@ -88,11 +46,47 @@ const Definition = React.memo<{
         classNames={{
           label: "overflow-visible text-2xl font-semibold tracking-tighter",
         }}
-        endContent={endContent}
+        endContent={
+          <div className="flex self-end">
+            {localDefinition === word.definition ||
+            localDefinition.length < DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH ||
+            localDefinition.length > DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH ? (
+              word.definition === null ? (
+                // Bug: https://github.com/nextui-org/nextui/issues/2069
+                <div />
+              ) : (
+                <Avatar {...readyAvatarProps} />
+              )
+            ) : (
+              <Button
+                color="primary"
+                onPress={() => () => {
+                  const nextDefinition = localDefinition || "";
+                  if (
+                    word.definition === nextDefinition ||
+                    nextDefinition.length <
+                      DEFINITIONS.TYPES.MIN_DEFINITION_LENGTH ||
+                    nextDefinition.length >
+                      DEFINITIONS.TYPES.MAX_DEFINITION_LENGTH
+                  ) {
+                    return;
+                  }
+                  updateDefinitionMutation.mutate({
+                    gameId,
+                    wordId,
+                    definition: nextDefinition,
+                  });
+                }}
+              >
+                {t("pages.start.words.saveButton")}
+              </Button>
+            )}
+          </div>
+        }
       />
     </div>
   );
-});
+};
 
 const ProposalReadiness = suspendedFallback<{
   wordId: WordId;

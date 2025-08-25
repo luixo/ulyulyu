@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 
 import { Avatar, Badge, Skeleton } from "@heroui/react";
 import BoringAvatar from "boring-avatars";
@@ -18,12 +18,12 @@ export type EndContent =
   | React.ReactNode
   | ((opts: { teamId: UserId }) => React.ReactNode);
 
-export const TeamReadiness = React.memo<
+export const TeamReadiness: React.FC<
   Partial<Omit<React.ComponentProps<typeof BoringAvatar>, "name">> & {
     teamId: UserId;
     ready: boolean;
   }
->(({ teamId, ready, colors, className, ...props }) => {
+> = ({ teamId, ready, colors, className, ...props }) => {
   const { id: gameId } = useGame();
   const { teams } = useGame();
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -42,7 +42,7 @@ export const TeamReadiness = React.memo<
       <span className="text-lg">{avatar.name}</span>
     </div>
   );
-});
+};
 
 const TeamReadinessLineSkeleton = () => {
   const props = useReadyAvatarProps(false);
@@ -54,16 +54,16 @@ const TeamReadinessLineSkeleton = () => {
   );
 };
 
-const TeamReadinessLine = React.memo<{
+const TeamReadinessLine: React.FC<{
   teamId: UserId;
   ready: boolean;
   endContent?: EndContent;
-}>(({ teamId, ready, endContent }) => (
+}> = ({ teamId, ready, endContent }) => (
   <div className="flex w-full justify-between gap-4">
     <TeamReadiness teamId={teamId} ready={ready} />
     {typeof endContent === "function" ? endContent({ teamId }) : endContent}
   </div>
-));
+);
 
 export const TeamReadinessSkeleton: React.FC<{ amount: number }> = ({
   amount,
@@ -75,12 +75,10 @@ export const TeamReadinessSkeleton: React.FC<{ amount: number }> = ({
   </div>
 );
 
-type Props = {
+export const TeamsReadiness: React.FC<{
   readiness: Record<UserId, boolean>;
   endContent?: EndContent;
-};
-
-export const TeamsReadiness = React.memo<Props>(({ readiness, endContent }) => (
+}> = ({ readiness, endContent }) => (
   <div className="flex flex-col gap-2">
     {entries(readiness).map(([teamId, ready]) => (
       <TeamReadinessLine
@@ -91,4 +89,4 @@ export const TeamsReadiness = React.memo<Props>(({ readiness, endContent }) => (
       />
     ))}
   </div>
-));
+);

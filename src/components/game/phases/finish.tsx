@@ -37,11 +37,11 @@ type GuessingData =
   | RouterOutput["definitions"]["getAdminGuessing"]
   | RouterOutput["definitions"]["getPlayerGuessing"];
 
-const ResultCell = React.memo<{
+const ResultCell: React.FC<{
   definition: string;
   voters: { id: UserId; nickname: string }[];
   selfVoteCorrect: boolean;
-}>(({ definition, voters, selfVoteCorrect }) => (
+}> = ({ definition, voters, selfVoteCorrect }) => (
   <div className="max-h-52 w-52 overflow-y-scroll text-center">
     <div className="flex gap-1">
       {(selfVoteCorrect ? [...voters, selfVoteCorrect] : voters).map(
@@ -68,94 +68,89 @@ const ResultCell = React.memo<{
     </div>
     {definition}
   </div>
-));
+);
 
 const useItems = (data: GuessingData) => {
   const { isOwner, teams, words } = useGame();
   const { id: selfUserId } = React.use(UserContext);
-  return React.useMemo(
-    () =>
-      [
-        ...entries(teams).sort(([teamAId], [teamBId]) => {
-          if (teamAId === selfUserId) {
-            return -1;
-          }
-          if (teamBId === selfUserId) {
-            return 1;
-          }
-          return teamAId.localeCompare(teamBId);
-        }),
-        [null, { nickname: undefined }] as const,
-      ].map(([teamId, team]) => ({
-        id: teamId,
-        nickname: team.nickname,
-        definitions: entries(words).map(([wordId, word]) => {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          const wordDefinition = data[wordId]!;
-          if (!("revealMap" in wordDefinition) || !wordDefinition.revealMap) {
-            throw new Error(
-              `Expected to have reveal map for word "${word.term}" (id "${wordId}")`,
-            );
-          }
-          const revealValues = values(wordDefinition.revealMap);
-          const selfVote = revealValues.find(
-            (value) => value && value.id === teamId,
+  return [
+    ...entries(teams).sort(([teamAId], [teamBId]) => {
+      if (teamAId === selfUserId) {
+        return -1;
+      }
+      if (teamBId === selfUserId) {
+        return 1;
+      }
+      return teamAId.localeCompare(teamBId);
+    }),
+    [null, { nickname: undefined }] as const,
+  ].map(([teamId, team]) => ({
+    id: teamId,
+    nickname: team.nickname,
+    definitions: entries(words).map(([wordId, word]) => {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const wordDefinition = data[wordId]!;
+      if (!("revealMap" in wordDefinition) || !wordDefinition.revealMap) {
+        throw new Error(
+          `Expected to have reveal map for word "${word.term}" (id "${wordId}")`,
+        );
+      }
+      const revealValues = values(wordDefinition.revealMap);
+      const selfVote = revealValues.find(
+        (value) => value && value.id === teamId,
+      );
+      const selfVoteCorrect = selfVote ? selfVote.vote === null : false;
+      const voters = revealValues
+        .filter((value) => (value ? value.vote === teamId : null))
+        .filter(isNonNullish)
+        .map((value) => ({
+          id: value.id,
+          nickname: teams[value.id]?.nickname ?? "unknown",
+        }));
+      if (isOwner) {
+        if (!("originalDefinition" in wordDefinition)) {
+          throw new Error(
+            `Expected to have voters for word "${word.term}" (id "${wordId}")`,
           );
-          const selfVoteCorrect = selfVote ? selfVote.vote === null : false;
-          const voters = revealValues
-            .filter((value) => (value ? value.vote === teamId : null))
-            .filter(isNonNullish)
-            .map((value) => ({
-              id: value.id,
-              nickname: teams[value.id]?.nickname ?? "unknown",
-            }));
-          if (isOwner) {
-            if (!("originalDefinition" in wordDefinition)) {
-              throw new Error(
-                `Expected to have voters for word "${word.term}" (id "${wordId}")`,
-              );
-            }
-            return {
-              id: wordId,
-              definition:
-                teamId === null
-                  ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    word.definition!
-                  : wordDefinition.definitions[teamId],
-              voters,
-              selfVoteCorrect,
-            };
-          }
-          if (!selfUserId) {
-            throw new Error(
-              `Expected to have selfUserId as not an owner of the game`,
-            );
-          }
-          const revealData = entries(wordDefinition.revealMap).find(
-            ([, revealDatum]) =>
-              (revealDatum ? revealDatum.id : null) === teamId,
-          );
-          if (!revealData) {
-            throw new Error(
-              `Expected to have reveal map for team "${team.nickname}" (id "${teamId}")`,
-            );
-          }
-          const [obfuscatedTeamId] = revealData;
-          return {
-            id: wordId,
-            definition:
-              selfUserId === teamId
-                ? word.definition
-                : (wordDefinition.definitions as Record<string, string>)[
-                    obfuscatedTeamId
-                  ],
-            voters,
-            selfVoteCorrect,
-          };
-        }),
-      })),
-    [teams, words, isOwner, selfUserId, data],
-  );
+        }
+        return {
+          id: wordId,
+          definition:
+            teamId === null
+              ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                word.definition!
+              : wordDefinition.definitions[teamId],
+          voters,
+          selfVoteCorrect,
+        };
+      }
+      if (!selfUserId) {
+        throw new Error(
+          `Expected to have selfUserId as not an owner of the game`,
+        );
+      }
+      const revealData = entries(wordDefinition.revealMap).find(
+        ([, revealDatum]) => (revealDatum ? revealDatum.id : null) === teamId,
+      );
+      if (!revealData) {
+        throw new Error(
+          `Expected to have reveal map for team "${team.nickname}" (id "${teamId}")`,
+        );
+      }
+      const [obfuscatedTeamId] = revealData;
+      return {
+        id: wordId,
+        definition:
+          selfUserId === teamId
+            ? word.definition
+            : (wordDefinition.definitions as Record<string, string>)[
+                obfuscatedTeamId
+              ],
+        voters,
+        selfVoteCorrect,
+      };
+    }),
+  }));
 };
 
 const getColumns = (
@@ -180,7 +175,7 @@ const ResultsTable = suspendedFallback(
         );
     const { t } = useTranslation();
     const { words, teams } = useGame();
-    const columns = React.useMemo(() => getColumns(words), [words]);
+    const columns = getColumns(words);
     const items = useItems(guessing);
     const { id: selfUserId } = React.use(UserContext);
     const [selectedCell, setSelectedCell] = React.useState<
@@ -320,17 +315,14 @@ const ResultsTable = suspendedFallback(
   () => {
     const { t } = useTranslation();
     const { words, teams } = useGame();
-    const columns = React.useMemo(() => getColumns(words), [words]);
-    const items = React.useMemo(
-      () => [
-        ...entries(teams).map(([teamId, team]) => ({
-          teamId,
-          team,
-        })),
-        { teamId: null, team: null },
-      ],
-      [teams],
-    );
+    const columns = getColumns(words);
+    const items = [
+      ...entries(teams).map(([teamId, team]) => ({
+        teamId,
+        team,
+      })),
+      { teamId: null, team: null },
+    ];
     return (
       <Table isStriped>
         <TableHeader columns={columns}>
@@ -366,16 +358,15 @@ const ResultsTable = suspendedFallback(
   },
 );
 
-const StartNewGameButton = React.memo(() => {
+const StartNewGameButton = () => {
   const { t } = useTranslation();
   const createGameMutation = useCreateGame();
-  const createGame = React.useCallback(() => {
-    createGameMutation.mutate();
-  }, [createGameMutation]);
   return (
     <>
       <Button
-        onPress={createGame}
+        onPress={() => {
+          createGameMutation.mutate();
+        }}
         isDisabled={
           createGameMutation.status === "pending" ||
           createGameMutation.status === "success"
@@ -394,17 +385,17 @@ const StartNewGameButton = React.memo(() => {
       ) : null}
     </>
   );
-});
+};
 
-const ToIndexButton = React.memo(() => {
+const ToIndexButton = () => {
   const { t } = useTranslation();
   const router = useRouter();
-  const toMainPage = React.useCallback(
-    () => router.navigate({ to: "/" }),
-    [router],
+  return (
+    <Button onPress={() => router.navigate({ to: "/" })}>
+      {t("pages.finish.back.button")}
+    </Button>
   );
-  return <Button onPress={toMainPage}>{t("pages.finish.back.button")}</Button>;
-});
+};
 
 type Props = {
   state: Extract<Game["state"], { phase: "finish" }>;

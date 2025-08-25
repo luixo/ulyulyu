@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 
 import {
   IoCaretForwardOutline as NextIcon,
@@ -12,26 +12,13 @@ import { useGameChangeWordPositionMutation } from "~/hooks/game/use-game-change-
 import { useWordPositions } from "~/hooks/game/use-word-positions";
 import { useGame } from "~/hooks/use-game";
 
-type Props = React.PropsWithChildren<{
-  className?: string;
-}>;
-
-export const WordControls = React.memo<Props>(({ className, children }) => {
+export const WordControls: React.FC<
+  React.PropsWithChildren<{
+    className?: string;
+  }>
+> = ({ className, children }) => {
   const { id: gameId, state, words } = useGame();
   const changeWordPositionMutation = useGameChangeWordPositionMutation();
-  const prevWord = React.useCallback(
-    () =>
-      changeWordPositionMutation.mutate({
-        id: gameId,
-        direction: "backward",
-      }),
-    [changeWordPositionMutation, gameId],
-  );
-  const nextWord = React.useCallback(
-    () =>
-      changeWordPositionMutation.mutate({ id: gameId, direction: "forward" }),
-    [changeWordPositionMutation, gameId],
-  );
   const { firstWordPosition, lastWordPosition } = useWordPositions();
   const wordsValues = values(words);
   if (state.phase !== "guessing" && state.phase !== "proposal") {
@@ -51,7 +38,13 @@ export const WordControls = React.memo<Props>(({ className, children }) => {
       <ClickableIcon
         Component={PrevIcon}
         onClick={
-          currentWord.position === firstWordPosition ? undefined : prevWord
+          currentWord.position === firstWordPosition
+            ? undefined
+            : () =>
+                changeWordPositionMutation.mutate({
+                  id: gameId,
+                  direction: "backward",
+                })
         }
         disabled={currentWord.position === firstWordPosition}
         size={32}
@@ -61,7 +54,13 @@ export const WordControls = React.memo<Props>(({ className, children }) => {
         <ClickableIcon
           Component={NextIcon}
           onClick={
-            currentWord.position === lastWordPosition ? undefined : nextWord
+            currentWord.position === lastWordPosition
+              ? undefined
+              : () =>
+                  changeWordPositionMutation.mutate({
+                    id: gameId,
+                    direction: "forward",
+                  })
           }
           disabled={currentWord.position === lastWordPosition}
           size={32}
@@ -69,4 +68,4 @@ export const WordControls = React.memo<Props>(({ className, children }) => {
       }
     </div>
   );
-});
+};

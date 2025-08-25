@@ -1,5 +1,3 @@
-import React from "react";
-
 import { useSubscribeToWordPositionChange } from "~/hooks/game/use-game-change-word-position";
 import { useSubscribeToGameState } from "~/hooks/game/use-game-state";
 import { useGame } from "~/hooks/use-game";
@@ -9,7 +7,7 @@ import { GuessingPhase } from "./phases/guessing";
 import { ProposalPhase } from "./phases/proposal";
 import { StartPhase } from "./phases/start";
 
-export const Game = React.memo(() => {
+export const Game = () => {
   const game = useGame();
   useSubscribeToGameState();
   useSubscribeToWordPositionChange();
@@ -23,4 +21,4 @@ export const Game = React.memo(() => {
     case "finish":
       return <FinishPhase state={game.state} />;
   }
-});
+};

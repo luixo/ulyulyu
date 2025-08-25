@@ -1,5 +1,3 @@
-import React from "react";
-
 import { Modal, ModalBody, ModalContent, useDisclosure } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { IoPerson as UserIcon } from "react-icons/io5";
@@ -7,7 +5,7 @@ import { IoPerson as UserIcon } from "react-icons/io5";
 import { ClickableIcon } from "~/components/base/clickable-icon";
 import { UserIdInfo } from "~/components/settings/user-id-info";
 
-export const AccountSettings = React.memo(() => {
+export const AccountSettings = () => {
   const { t } = useTranslation();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
@@ -28,4 +26,4 @@ export const AccountSettings = React.memo(() => {
       </Modal>
     </>
   );
-});
+};

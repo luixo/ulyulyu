@@ -1,13 +1,13 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 
-import { useUpdateGamesCache } from "~/hooks/use-update-cache";
+import { useUpdateCache } from "~/hooks/use-update-cache";
 import { useTRPC } from "~/utils/trpc";
 
 export const useCreateGame = () => {
   const trpc = useTRPC();
   const router = useRouter();
-  const [updateGamesCache] = useUpdateGamesCache();
+  const updateGamesCache = useUpdateCache(trpc.games.getAll.queryFilter());
   return useMutation(
     trpc.games.put.mutationOptions({
       onSuccess: (game) => {

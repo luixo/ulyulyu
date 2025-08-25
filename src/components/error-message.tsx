@@ -1,13 +1,11 @@
-import React from "react";
+import type React from "react";
 
 import { Card, CardBody } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 
-type Props = {
+export const ErrorMessage: React.FC<{
   error: unknown;
-};
-
-export const ErrorMessage = React.memo<Props>(({ error }) => {
+}> = ({ error }) => {
   const { t } = useTranslation();
   return (
     <Card className="border-danger">
@@ -23,4 +21,4 @@ export const ErrorMessage = React.memo<Props>(({ error }) => {
       </CardBody>
     </Card>
   );
-});
+};

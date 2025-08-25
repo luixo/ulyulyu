@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 
 import { useTranslation } from "react-i18next";
 import { keys, values } from "remeda";
@@ -6,11 +6,9 @@ import { twMerge } from "tailwind-merge";
 
 import { useGame } from "~/hooks/use-game";
 
-type Props = {
+export const WordTracker: React.FC<{
   className?: string;
-};
-
-export const WordTracker = React.memo<Props>(({ className }) => {
+}> = ({ className }) => {
   const { t } = useTranslation();
   const { words, state } = useGame();
   const wordsValues = values(words).sort(
@@ -36,4 +34,4 @@ export const WordTracker = React.memo<Props>(({ className }) => {
       })}
     </span>
   );
-});
+};

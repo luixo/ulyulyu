@@ -13,12 +13,9 @@ export const Route = createFileRoute("/games/$id")({
   loader: async ({ context, params }) => {
     const trpc = getTrpcClient(context);
     try {
-      const game = await context.queryClient.fetchQuery(
+      await context.queryClient.fetchQuery(
         trpc.games.get.queryOptions({ id: params.id as GameId }),
       );
-      if (!game) {
-        throw new Error(`No game ${params.id} found!`);
-      }
     } catch {
       throw redirect({ to: "/" });
     }

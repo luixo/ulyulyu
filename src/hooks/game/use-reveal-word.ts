@@ -1,20 +1,20 @@
-import React from "react";
-
 import { useMutation } from "@tanstack/react-query";
+import { useEventCallback } from "usehooks-ts";
 
 import type { WordId } from "~/db/database.gen";
 import { useGame } from "~/hooks/use-game";
 import { useSubscription } from "~/hooks/use-subscription";
-import {
-  useUpdateAdminGuessingCache,
-  useUpdatePlayerGuessingCache,
-} from "~/hooks/use-update-cache";
+import { useUpdateCache } from "~/hooks/use-update-cache";
 import type { SubscriptionMapping } from "~/types/subscription";
 import { useTRPC } from "~/utils/trpc";
 
 const useChangeGuessAdminWordRevealMapCache = () => {
-  const [updateAdminGuessingCache] = useUpdateAdminGuessingCache();
-  return React.useCallback(
+  const trpc = useTRPC();
+  const { id: gameId } = useGame();
+  const updateAdminGuessingCache = useUpdateCache(
+    trpc.definitions.getAdminGuessing.queryFilter({ gameId }),
+  );
+  return useEventCallback(
     (
       wordId: WordId,
       revealMap: SubscriptionMapping["guessing:reveal"]["mapping"],
@@ -27,13 +27,16 @@ const useChangeGuessAdminWordRevealMapCache = () => {
             }
           : defs,
       ),
-    [updateAdminGuessingCache],
   );
 };
 
 const useChangeGuessPlayerWordRevealMapCache = () => {
-  const [updatePlayerGuessingCache] = useUpdatePlayerGuessingCache();
-  return React.useCallback(
+  const trpc = useTRPC();
+  const { id: gameId } = useGame();
+  const updatePlayerGuessingCache = useUpdateCache(
+    trpc.definitions.getPlayerGuessing.queryFilter({ gameId }),
+  );
+  return useEventCallback(
     (
       wordId: WordId,
       revealMap: SubscriptionMapping["guessing:reveal"]["mapping"],
@@ -46,7 +49,6 @@ const useChangeGuessPlayerWordRevealMapCache = () => {
             }
           : defs,
       ),
-    [updatePlayerGuessingCache],
   );
 };
 
@@ -70,19 +72,12 @@ export const useSubscribeToWordReveal = () => {
     useChangeGuessPlayerWordRevealMapCache();
   return useSubscription(
     "guessing:reveal",
-    React.useCallback(
-      ({ wordId, mapping }) => {
-        if (isOwner) {
-          changeGuessAdminWordRevealMapCache(wordId, mapping);
-        } else {
-          changeGuessPlayerWordRevealMapCache(wordId, mapping);
-        }
-      },
-      [
-        changeGuessAdminWordRevealMapCache,
-        changeGuessPlayerWordRevealMapCache,
-        isOwner,
-      ],
-    ),
+    useEventCallback(({ wordId, mapping }) => {
+      if (isOwner) {
+        changeGuessAdminWordRevealMapCache(wordId, mapping);
+      } else {
+        changeGuessPlayerWordRevealMapCache(wordId, mapping);
+      }
+    }),
   );
 };

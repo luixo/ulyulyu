@@ -13,18 +13,17 @@ import { useCreateGame } from "~/hooks/use-create-game";
 import type { RouterOutput } from "~/utils/query";
 import { useTRPC } from "~/utils/trpc";
 
-const PreviousGame = React.memo<{
+const PreviousGame: React.FC<{
   game: RouterOutput["games"]["getAll"][number];
-}>(({ game }) => {
+}> = ({ game }) => {
   const { t } = useTranslation();
   const router = useRouter();
-  const joinGame = React.useCallback(() => {
-    router.navigate({ to: "/games/$id", params: { id: game.id } });
-  }, [game.id, router]);
   const timestamp = new Date(game.createdAt);
   return (
     <Button
-      onPress={joinGame}
+      onPress={() =>
+        router.navigate({ to: "/games/$id", params: { id: game.id } })
+      }
       color={
         game.state === "done"
           ? "success"
@@ -38,7 +37,7 @@ const PreviousGame = React.memo<{
       })}
     </Button>
   );
-});
+};
 
 const PreviousGamesCardWrapper: React.FC<React.PropsWithChildren> = ({
   children,
@@ -78,12 +77,9 @@ const PreviousGamesCard = suspendedFallback(
   </PreviousGamesCardWrapper>,
 );
 
-const CreateGameCard = React.memo(() => {
+const CreateGameCard = () => {
   const { t } = useTranslation();
   const createGameMutation = useCreateGame();
-  const createGame = React.useCallback(() => {
-    createGameMutation.mutate();
-  }, [createGameMutation]);
   return (
     <Card>
       <CardBody className="flex flex-col gap-2">
@@ -92,7 +88,7 @@ const CreateGameCard = React.memo(() => {
         </h2>
         <Button
           color={createGameMutation.status === "error" ? "danger" : "primary"}
-          onPress={createGame}
+          onPress={() => createGameMutation.mutate()}
           isDisabled={
             createGameMutation.status === "pending" ||
             createGameMutation.status === "success"
@@ -111,18 +107,12 @@ const CreateGameCard = React.memo(() => {
       </CardBody>
     </Card>
   );
-});
+};
 
-const JoinGameCard = React.memo(() => {
+const JoinGameCard = () => {
   const { t } = useTranslation();
   const router = useRouter();
   const [slug, setSlug] = React.useState("");
-  const joinGame = React.useCallback(() => {
-    if (slug.length !== GAMES.TYPES.ID_LENGTH) {
-      return;
-    }
-    router.navigate({ to: "/games/$id", params: { id: slug } });
-  }, [slug, router]);
   return (
     <Card>
       <CardBody className="flex flex-col gap-2">
@@ -138,19 +128,28 @@ const JoinGameCard = React.memo(() => {
           labelPlacement="outside"
           placeholder=" "
         />
-        <Button color="primary" onPress={joinGame} isDisabled={!slug}>
+        <Button
+          color="primary"
+          onPress={() => {
+            if (slug.length !== GAMES.TYPES.ID_LENGTH) {
+              return;
+            }
+            router.navigate({ to: "/games/$id", params: { id: slug } });
+          }}
+          isDisabled={!slug}
+        >
           {t("pages.index.joinGame.button")}
         </Button>
       </CardBody>
     </Card>
   );
-});
+};
 
-export const Page = React.memo(() => (
+export const Page = () => (
   <div className="flex flex-col gap-4">
     <Header />
     <CreateGameCard />
     <JoinGameCard />
     <PreviousGamesCard />
   </div>
-));
+);

@@ -1,41 +1,43 @@
-import React from "react";
-
 import { useMutation } from "@tanstack/react-query";
 import { omit } from "remeda";
+import { useEventCallback } from "usehooks-ts";
 
 import type { WordId } from "~/db/database.gen";
-import type { Game } from "~/hooks/use-game";
+import { type Game, useGame } from "~/hooks/use-game";
 import { useSubscription } from "~/hooks/use-subscription";
-import { useUpdateGameCache } from "~/hooks/use-update-cache";
+import { useInvalidateCache, useUpdateCache } from "~/hooks/use-update-cache";
 import { useTRPC } from "~/utils/trpc";
 
 const useAddWordCache = () => {
-  const [updateGameCache] = useUpdateGameCache();
-  return React.useCallback(
-    (wordId: WordId, word: Game["words"][WordId]) =>
-      updateGameCache((prevGame) => ({
-        ...prevGame,
-        words: { ...prevGame.words, [wordId]: word },
-      })),
-    [updateGameCache],
+  const trpc = useTRPC();
+  const { id } = useGame();
+  const updateGameCache = useUpdateCache(trpc.games.get.queryFilter({ id }));
+  return useEventCallback((wordId: WordId, word: Game["words"][WordId]) =>
+    updateGameCache((prevGame) => ({
+      ...prevGame,
+      words: { ...prevGame.words, [wordId]: word },
+    })),
   );
 };
 
 const useRemoveWordCache = () => {
-  const [updateGameCache] = useUpdateGameCache();
-  return React.useCallback(
-    (wordId: WordId) =>
-      updateGameCache((prevGame) => ({
-        ...prevGame,
-        words: omit(prevGame.words, [wordId]),
-      })),
-    [updateGameCache],
+  const trpc = useTRPC();
+  const { id } = useGame();
+  const updateGameCache = useUpdateCache(trpc.games.get.queryFilter({ id }));
+  return useEventCallback((wordId: WordId) =>
+    updateGameCache((prevGame) => ({
+      ...prevGame,
+      words: omit(prevGame.words, [wordId]),
+    })),
   );
 };
 
 export const useAddWordMutation = () => {
   const trpc = useTRPC();
-  const [, invalidateGameCache] = useUpdateGameCache();
+  const { id } = useGame();
+  const invalidateGameCache = useInvalidateCache(
+    trpc.games.get.queryFilter({ id }),
+  );
   const addWordCache = useAddWordCache();
   const removeWordCache = useRemoveWordCache();
   return useMutation(
@@ -66,9 +68,6 @@ export const useSubscribeToWordAddition = () => {
   const addWordCache = useAddWordCache();
   return useSubscription(
     "word:add",
-    React.useCallback(
-      ({ id, ...word }) => addWordCache(id, word),
-      [addWordCache],
-    ),
+    useEventCallback(({ id, ...word }) => addWordCache(id, word)),
   );
 };

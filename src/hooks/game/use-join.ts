@@ -1,30 +1,34 @@
 import React from "react";
 
 import { useMutation } from "@tanstack/react-query";
+import { useEventCallback } from "usehooks-ts";
 
 import { UserContext } from "~/contexts/user-id-context";
 import type { UserId } from "~/db/database.gen";
-import type { Game } from "~/hooks/use-game";
+import { type Game, useGame } from "~/hooks/use-game";
 import { useSubscription } from "~/hooks/use-subscription";
-import { useUpdateGameCache } from "~/hooks/use-update-cache";
+import { useInvalidateCache, useUpdateCache } from "~/hooks/use-update-cache";
 import { useTRPC } from "~/utils/trpc";
 
 const useAddTeamCache = () => {
-  const [updateGameCache] = useUpdateGameCache();
-  return React.useCallback(
-    (teamId: UserId, team: Game["teams"][UserId]) =>
-      updateGameCache((game) => ({
-        ...game,
-        teams: { ...game.teams, [teamId]: team },
-      })),
-    [updateGameCache],
+  const trpc = useTRPC();
+  const { id } = useGame();
+  const updateGameCache = useUpdateCache(trpc.games.get.queryFilter({ id }));
+  return useEventCallback((teamId: UserId, team: Game["teams"][UserId]) =>
+    updateGameCache((game) => ({
+      ...game,
+      teams: { ...game.teams, [teamId]: team },
+    })),
   );
 };
 
 export const useJoinMutation = () => {
   const trpc = useTRPC();
   const { id: selfUserId } = React.use(UserContext);
-  const [, invalidateGameCache] = useUpdateGameCache();
+  const { id } = useGame();
+  const invalidateGameCache = useInvalidateCache(
+    trpc.games.get.queryFilter({ id }),
+  );
   const addTeamCache = useAddTeamCache();
   return useMutation(
     trpc.teams.join.mutationOptions({
@@ -42,10 +46,8 @@ export const useSubscribeToJoin = () => {
   const addTeamCache = useAddTeamCache();
   return useSubscription(
     "team:join",
-    React.useCallback(
-      ({ userId, nickname }) =>
-        addTeamCache(userId, { nickname, ready: false }),
-      [addTeamCache],
+    useEventCallback(({ userId, nickname }) =>
+      addTeamCache(userId, { nickname, ready: false }),
     ),
   );
 };

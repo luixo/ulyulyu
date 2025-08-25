@@ -1,5 +1,3 @@
-import React from "react";
-
 import {
   Modal,
   ModalBody,
@@ -13,7 +11,7 @@ import { IoSettings as GearIcon } from "react-icons/io5";
 import { ClickableIcon } from "~/components/base/clickable-icon";
 import { LangSwitcher } from "~/components/settings/lang-switcher";
 
-export const Settings = React.memo(() => {
+export const Settings = () => {
   const { t } = useTranslation();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
@@ -32,4 +30,4 @@ export const Settings = React.memo(() => {
       </Modal>
     </div>
   );
-});
+};

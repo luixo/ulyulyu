@@ -43,20 +43,16 @@ import {
 } from "~/hooks/game/use-team-readiness-change";
 import { useGame } from "~/hooks/use-game";
 
-const KickButton = React.memo<{
+const KickButton: React.FC<{
   teamId: UserId;
-}>(({ teamId }) => {
+}> = ({ teamId }) => {
   const { t } = useTranslation();
   const { id: gameId } = useGame();
   const kickMutation = useKickMutation();
-  const kick = React.useCallback(
-    () => kickMutation.mutate({ gameId, teamId }),
-    [kickMutation, teamId, gameId],
-  );
   return (
     <>
       <Button
-        onPress={kick}
+        onPress={() => kickMutation.mutate({ gameId, teamId })}
         color="danger"
         isDisabled={kickMutation.status === "pending"}
         isLoading={kickMutation.status === "pending"}
@@ -74,22 +70,18 @@ const KickButton = React.memo<{
       ) : null}
     </>
   );
-});
+};
 
-const LeaveButton = React.memo<{
+const LeaveButton: React.FC<{
   leaveMutation: ReturnType<typeof useLeaveMutation>;
-}>(({ leaveMutation }) => {
+}> = ({ leaveMutation }) => {
   const { t } = useTranslation();
   const { id: gameId } = useGame();
-  const leave = React.useCallback(
-    () => leaveMutation.mutate({ gameId }),
-    [leaveMutation, gameId],
-  );
   return (
     <>
       <Button
         color="danger"
-        onPress={leave}
+        onPress={() => leaveMutation.mutate({ gameId })}
         isDisabled={leaveMutation.status === "pending"}
         isLoading={leaveMutation.status === "pending"}
       >
@@ -102,28 +94,27 @@ const LeaveButton = React.memo<{
       ) : null}
     </>
   );
-});
+};
 
-const JoinButton = React.memo<{
+const JoinButton: React.FC<{
   nickname: string;
   joinMutation: ReturnType<typeof useJoinMutation>;
   isDisabled: boolean;
-}>(({ nickname, joinMutation, isDisabled }) => {
+}> = ({ nickname, joinMutation, isDisabled }) => {
   const { t } = useTranslation();
   const { id: gameId } = useGame();
-  const join = React.useCallback(() => {
-    if (
-      nickname.length > TEAMS.TYPES.MAX_NAME_LENGTH ||
-      nickname.length < TEAMS.TYPES.MIN_NAME_LENGTH
-    ) {
-      return;
-    }
-    joinMutation.mutate({ gameId, nickname });
-  }, [joinMutation, gameId, nickname]);
   return (
     <>
       <Button
-        onPress={join}
+        onPress={() => {
+          if (
+            nickname.length > TEAMS.TYPES.MAX_NAME_LENGTH ||
+            nickname.length < TEAMS.TYPES.MIN_NAME_LENGTH
+          ) {
+            return;
+          }
+          joinMutation.mutate({ gameId, nickname });
+        }}
         isDisabled={joinMutation.status === "pending" || isDisabled}
         isLoading={joinMutation.status === "pending"}
         color={joinMutation.status === "error" ? "danger" : "primary"}
@@ -137,30 +128,15 @@ const JoinButton = React.memo<{
       ) : null}
     </>
   );
-});
-
-const useChangeNickame = (nickname: string) => {
-  const { id: gameId } = useGame();
-  const teamNicknameChangeMutation = useTeamNicknameChangeMutation();
-  const changeTeamNickname = React.useCallback(() => {
-    if (
-      nickname.length > TEAMS.TYPES.MAX_NAME_LENGTH ||
-      nickname.length < TEAMS.TYPES.MIN_NAME_LENGTH
-    ) {
-      return;
-    }
-    teamNicknameChangeMutation.mutate({ gameId, nickname });
-  }, [teamNicknameChangeMutation, gameId, nickname]);
-  return { teamNicknameChangeMutation, changeTeamNickname };
 };
 
-const SelfTeamInput = React.memo<{
+const SelfTeamInput: React.FC<{
   nickname: string;
   setNickname: (nextNickname: string) => void;
   label?: string;
   isDisabled?: boolean;
   endContent?: React.ReactNode;
-}>(({ nickname, setNickname, label, endContent, isDisabled }) => {
+}> = ({ nickname, setNickname, label, endContent, isDisabled }) => {
   const { t } = useTranslation();
   return (
     <Input
@@ -176,9 +152,9 @@ const SelfTeamInput = React.memo<{
       endContent={endContent}
     />
   );
-});
+};
 
-export const Teams = React.memo(() => {
+export const Teams = () => {
   const { t } = useTranslation();
   const { isOwner, id: gameId, teams, words } = useGame();
   const { id: selfUserId } = React.use(UserContext);
@@ -191,49 +167,16 @@ export const Teams = React.memo(() => {
   useSubscribeToLeave();
   useSubscribeToTeamReadyChange();
   useSubscribeToTeamNicknameChange();
-  const onSelfReadinessChange = React.useCallback(
-    (nextValue: boolean) =>
-      teamReadinessChangeMutation.mutate({
-        gameId,
-        ready: nextValue,
-      }),
-    [teamReadinessChangeMutation, gameId],
-  );
   const startGameMutation = useStartGameMutation();
   useSubscribeToGameStart();
-  const startGame = React.useCallback(() => {
-    startGameMutation.mutate({ id: gameId, teamIds: keys(teams) });
-  }, [startGameMutation, gameId, teams]);
   const teamReadiness = mapValues(
     omitBy(teams, (_ready, teamId) => teamId === selfUserId),
     (team) => team.ready,
   );
-  const { teamNicknameChangeMutation, changeTeamNickname } =
-    useChangeNickame(nickname);
-  const changeTeamNicknameIcon = React.useMemo(
-    () => (
-      <SaveAction
-        mutation={teamNicknameChangeMutation}
-        onClick={changeTeamNickname}
-        isVisible={nickname !== selfTeam?.nickname}
-      />
-    ),
-    [
-      teamNicknameChangeMutation,
-      changeTeamNickname,
-      nickname,
-      selfTeam?.nickname,
-    ],
-  );
+  const teamNicknameChangeMutation = useTeamNicknameChangeMutation();
   const teamsAmount = keys(teams).length;
   const wordsAmount = keys(words).length;
   const canStartGame = teamsAmount >= 2 && wordsAmount >= 1;
-  const getEndContent = React.useCallback<
-    (options: { teamId: UserId }) => React.ReactNode
-  >(
-    ({ teamId }) => (isOwner ? <KickButton teamId={teamId} /> : null),
-    [isOwner],
-  );
 
   return (
     <Card>
@@ -252,7 +195,9 @@ export const Teams = React.memo(() => {
               <Button
                 color="primary"
                 isDisabled={!canStartGame}
-                onPress={startGame}
+                onPress={() =>
+                  startGameMutation.mutate({ id: gameId, teamIds: keys(teams) })
+                }
                 className="pointer-events-auto"
               >
                 {t("pages.start.startButton.text")}
@@ -264,7 +209,12 @@ export const Teams = React.memo(() => {
               <Switch
                 color="success"
                 isSelected={selfTeam.ready}
-                onValueChange={onSelfReadinessChange}
+                onValueChange={(nextValue: boolean) =>
+                  teamReadinessChangeMutation.mutate({
+                    gameId,
+                    ready: nextValue,
+                  })
+                }
                 thumbIcon={selfTeam.ready ? <ReadyIcon /> : <NotReadyIcon />}
               />
             </div>
@@ -280,7 +230,24 @@ export const Teams = React.memo(() => {
                     nickname={nickname}
                     setNickname={setNickname}
                     isDisabled={teamNicknameChangeMutation.status === "pending"}
-                    endContent={changeTeamNicknameIcon}
+                    endContent={
+                      <SaveAction
+                        mutation={teamNicknameChangeMutation}
+                        onClick={() => {
+                          if (
+                            nickname.length > TEAMS.TYPES.MAX_NAME_LENGTH ||
+                            nickname.length < TEAMS.TYPES.MIN_NAME_LENGTH
+                          ) {
+                            return;
+                          }
+                          teamNicknameChangeMutation.mutate({
+                            gameId,
+                            nickname,
+                          });
+                        }}
+                        isVisible={nickname !== selfTeam?.nickname}
+                      />
+                    }
                   />
                   <LeaveButton leaveMutation={leaveMutation} />
                 </div>
@@ -305,7 +272,9 @@ export const Teams = React.memo(() => {
               {isOwner ? null : <Divider />}
               <TeamsReadiness
                 readiness={teamReadiness}
-                endContent={getEndContent}
+                endContent={({ teamId }) =>
+                  isOwner ? <KickButton teamId={teamId} /> : null
+                }
               />
             </>
           ) : isOwner ? (
@@ -315,4 +284,4 @@ export const Teams = React.memo(() => {
       </CardBody>
     </Card>
   );
-});
+};

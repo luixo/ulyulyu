@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 
 import { Button } from "@heroui/react";
 import { useTranslation } from "react-i18next";
@@ -11,20 +11,22 @@ const LOCALE_NAMES: Partial<Record<Language, string>> = {
   en: "English",
 };
 
-const Language = React.memo<{ lang: Language }>(({ lang }) => {
+const Language: React.FC<{ lang: Language }> = ({ lang }) => {
   const { i18n } = useTranslation();
-  const changeLanguage = React.useCallback(() => {
-    i18n.changeLanguage(lang);
-    setCookieLanguage(lang);
-  }, [i18n, lang]);
   return (
-    <Button color="primary" onPress={changeLanguage}>
+    <Button
+      color="primary"
+      onPress={() => {
+        i18n.changeLanguage(lang);
+        setCookieLanguage(lang);
+      }}
+    >
       {LOCALE_NAMES[lang] ?? "unknown"}
     </Button>
   );
-});
+};
 
-export const LangSwitcher = React.memo(() => {
+export const LangSwitcher = () => {
   const { t } = useTranslation();
   const { i18n } = useTranslation();
   return (
@@ -39,4 +41,4 @@ export const LangSwitcher = React.memo(() => {
       </div>
     </div>
   );
-});
+};

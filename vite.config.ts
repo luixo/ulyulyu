@@ -15,7 +15,12 @@ export default defineConfig({
       projects: ["./tsconfig.json"],
     }),
     tanstackStart({ customViteReactPlugin: true }),
-    viteReact(),
+
+    viteReact({
+      babel: {
+        plugins: ["babel-plugin-react-compiler"],
+      },
+    }),
     tailwindcss(),
   ],
 });

@@ -9,39 +9,35 @@ import {
 
 import { ErrorMessage } from "~/components/error-message";
 
-type Props = {
+export const SaveAction: React.FC<{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mutation: UseMutationResult<any, any, any>;
   onClick: () => void;
   isVisible: boolean;
-};
-
-export const SaveAction = React.memo<Props>(
-  ({ isVisible, mutation, onClick }) => {
-    const { isOpen, onOpen, onOpenChange } = useDisclosure();
-    React.useEffect(() => {
-      if (mutation.status === "error") {
-        onOpen();
-      }
-    }, [mutation.status, onOpen]);
-    if (!isVisible) {
-      return null;
-    }
-    if (mutation.status === "pending") {
-      return <Spinner color="current" size="sm" />;
-    }
+}> = ({ isVisible, mutation, onClick }) => {
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  React.useEffect(() => {
     if (mutation.status === "error") {
-      return (
-        <>
-          <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-            <ModalContent>
-              <ErrorMessage error={mutation.error} />
-            </ModalContent>
-          </Modal>
-          <ErrorIcon size={24} onClick={onOpen} />
-        </>
-      );
+      onOpen();
     }
-    return <SaveIcon size={24} className="cursor-pointer" onClick={onClick} />;
-  },
-);
+  }, [mutation.status, onOpen]);
+  if (!isVisible) {
+    return null;
+  }
+  if (mutation.status === "pending") {
+    return <Spinner color="current" size="sm" />;
+  }
+  if (mutation.status === "error") {
+    return (
+      <>
+        <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+          <ModalContent>
+            <ErrorMessage error={mutation.error} />
+          </ModalContent>
+        </Modal>
+        <ErrorIcon size={24} onClick={onOpen} />
+      </>
+    );
+  }
+  return <SaveIcon size={24} className="cursor-pointer" onClick={onClick} />;
+};

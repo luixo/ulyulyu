@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { getDatabase } from "~/db";
@@ -38,7 +39,10 @@ export const procedure = authProcedure
         .execute(),
     ]);
     if (!game) {
-      return null;
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: `Game "${input.id}" not found.`,
+      });
     }
     const isOwner = game.ownerId === ctx.auth.userId;
     return {

@@ -1,29 +1,28 @@
-import React from "react";
-
 import { useMutation } from "@tanstack/react-query";
+import { useEventCallback } from "usehooks-ts";
 
 import { useWordPositions } from "~/hooks/game/use-word-positions";
 import type { Game } from "~/hooks/use-game";
 import { useGame } from "~/hooks/use-game";
 import { useSubscription } from "~/hooks/use-subscription";
-import { useUpdateGameCache } from "~/hooks/use-update-cache";
+import { useInvalidateCache, useUpdateCache } from "~/hooks/use-update-cache";
 import { useTRPC } from "~/utils/trpc";
 
-type State = Game["state"];
-
 export const useChangeGameStateCache = () => {
-  const [updateGameCache] = useUpdateGameCache();
-  return React.useCallback(
-    (nextState: State) =>
-      updateGameCache((game) => ({ ...game, state: nextState })),
-    [updateGameCache],
+  const trpc = useTRPC();
+  const { id } = useGame();
+  const updateGameCache = useUpdateCache(trpc.games.get.queryFilter({ id }));
+  return useEventCallback((nextState: Game["state"]) =>
+    updateGameCache((game) => ({ ...game, state: nextState })),
   );
 };
 
 export const useGameStateMutation = () => {
   const trpc = useTRPC();
-  const { state: currentState } = useGame();
-  const [, invalidateGameCache] = useUpdateGameCache();
+  const { state: currentState, id } = useGame();
+  const invalidateGameCache = useInvalidateCache(
+    trpc.games.get.queryFilter({ id }),
+  );
   const changeGameStateCache = useChangeGameStateCache();
   const { firstWordPosition, lastWordPosition } = useWordPositions();
   return useMutation(
@@ -80,9 +79,6 @@ export const useSubscribeToGameState = () => {
   const changeGameStateCache = useChangeGameStateCache();
   return useSubscription(
     "game:state",
-    React.useCallback(
-      ({ state }) => changeGameStateCache(state),
-      [changeGameStateCache],
-    ),
+    useEventCallback(({ state }) => changeGameStateCache(state)),
   );
 };

@@ -26,31 +26,30 @@ import { useTRPC } from "~/utils/trpc";
 
 type Guessing = RouterOutput["definitions"]["getAdminGuessing"];
 
-const RevealButton = React.memo<{
+const RevealButton: React.FC<{
   wordId: WordId;
   disabled: boolean;
-}>(({ wordId, disabled }) => {
+}> = ({ wordId, disabled }) => {
   const { id: gameId } = useGame();
   const revealMutation = useRevealWordMutation();
-  const revealWord = React.useCallback(() => {
-    revealMutation.mutate({ gameId, wordId });
-  }, [wordId, gameId, revealMutation]);
   return (
     <ClickableIcon
-      onClick={revealWord}
+      onClick={() => {
+        revealMutation.mutate({ gameId, wordId });
+      }}
       Component={OpenBox}
       size={32}
       disabled={disabled}
     />
   );
-});
+};
 
-const TeamsDefinitions = React.memo<{
+const TeamsDefinitions: React.FC<{
   word: Game["words"][WordId];
   hideSensitiveData: boolean;
   definitions: Guessing[WordId]["definitions"];
   readiness: Guessing[WordId]["readiness"];
-}>(({ word, hideSensitiveData, definitions, readiness }) => {
+}> = ({ word, hideSensitiveData, definitions, readiness }) => {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-2">
@@ -85,13 +84,13 @@ const TeamsDefinitions = React.memo<{
       ))}
     </div>
   );
-});
+};
 
-const TeamGuesses = React.memo<{
+const TeamGuesses: React.FC<{
   word: Game["words"][WordId];
   guessing: Guessing[WordId];
   revealMap: NonNullable<Guessing[WordId]["revealMap"]>;
-}>(({ word, guessing, revealMap }) => {
+}> = ({ word, guessing, revealMap }) => {
   const { t } = useTranslation();
   const teamsValues = values(revealMap).filter(isNonNullish);
   const { teams } = useGame();
@@ -156,7 +155,7 @@ const TeamGuesses = React.memo<{
       })}
     </div>
   );
-});
+};
 
 const NextButton = suspendedFallback<{
   wordId: WordId;
@@ -166,9 +165,6 @@ const NextButton = suspendedFallback<{
   const { t } = useTranslation();
   const gameStateMutation = useGameStateMutation();
   const { id: gameId } = useGame();
-  const nextPhase = React.useCallback(() => {
-    gameStateMutation.mutate({ id: gameId, direction: "forward" });
-  }, [gameStateMutation, gameId]);
   const { data: definitions } = useSuspenseQuery(
     trpc.definitions.getAdminGuessing.queryOptions({
       gameId,
@@ -177,14 +173,13 @@ const NextButton = suspendedFallback<{
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const wordGuessing = definitions[wordId]!;
   const { lastWordPosition } = useWordPositions();
-  const allTeamsReady = React.useMemo(
-    () => values(wordGuessing.readiness).every(Boolean),
-    [wordGuessing.readiness],
-  );
+  const allTeamsReady = values(wordGuessing.readiness).every(Boolean);
   return (
     <Button
       color="primary"
-      onPress={nextPhase}
+      onPress={() => {
+        gameStateMutation.mutate({ id: gameId, direction: "forward" });
+      }}
       isDisabled={!allTeamsReady || !wordGuessing.revealMap}
       className={word.position !== lastWordPosition ? "invisible" : undefined}
     >
@@ -203,10 +198,7 @@ const NextArrow = suspendedFallback<{ wordId: WordId }>(({ wordId }) => {
   );
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const wordGuessing = definitions[wordId]!;
-  const allTeamsReady = React.useMemo(
-    () => values(wordGuessing.readiness).every(Boolean),
-    [wordGuessing.readiness],
-  );
+  const allTeamsReady = values(wordGuessing.readiness).every(Boolean);
   if (wordGuessing.revealMap) {
     return null;
   }

@@ -19,10 +19,10 @@ import type { Game } from "~/hooks/use-game";
 import { useGame } from "~/hooks/use-game";
 import { useTRPC } from "~/utils/trpc";
 
-const Definition = React.memo<{
+const Definition: React.FC<{
   word: Game["words"][WordId];
   definitionHidden: boolean;
-}>(({ word, definitionHidden }) => {
+}> = ({ word, definitionHidden }) => {
   const { t } = useTranslation();
   return (
     <div className="relative flex">
@@ -41,7 +41,7 @@ const Definition = React.memo<{
       />
     </div>
   );
-});
+};
 
 const useWaitingTeams = () => {
   const trpc = useTRPC();
@@ -84,13 +84,12 @@ const NextButton = suspendedFallback<{ word: Game["words"][WordId] }>(
     const { t } = useTranslation();
     const gameStateMutation = useGameStateMutation();
     const { id: gameId } = useGame();
-    const nextPhase = React.useCallback(() => {
-      gameStateMutation.mutate({ id: gameId, direction: "forward" });
-    }, [gameStateMutation, gameId]);
     return (
       <Button
         color="primary"
-        onPress={nextPhase}
+        onPress={() =>
+          gameStateMutation.mutate({ id: gameId, direction: "forward" })
+        }
         isDisabled={isDisabled}
         className={word.position !== lastWordPosition ? "invisible" : undefined}
       >
