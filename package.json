@@ -14,6 +14,16 @@
     "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit"
   },
+  "pre-commit": [
+    "typecheck",
+    "lint-staged"
+  ],
+  "lint-staged": {
+    "*.{j,t}s{,x}": [
+      "prettier --write",
+      "eslint --max-warnings=0 --fix"
+    ]
+  },
   "dependencies": {
     "@heroui/react": "^2.8.2",
     "@tanstack/react-form": "^1.19.2",

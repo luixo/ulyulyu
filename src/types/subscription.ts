@@ -1,8 +1,9 @@
-import type { Games, UserId, WordId } from "~/server/validation";
+import type { Game } from "~/hooks/use-game";
+import type { UserId, WordId } from "~/server/validation";
 
 export type SubscriptionMapping = {
   "game:state": {
-    state: Games["state"];
+    state: Game["state"];
   };
   "game:currentPosition": {
     currentPosition: number;

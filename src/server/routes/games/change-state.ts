@@ -2,9 +2,9 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { getDatabase } from "~/db";
+import type { Game } from "~/hooks/use-game";
 import { getEmitter } from "~/server/emitter";
 import { authProcedure } from "~/server/procedures";
-import type { Games } from "~/server/validation";
 import { gameIdSchema } from "~/server/validation";
 
 export const procedure = authProcedure
@@ -38,7 +38,7 @@ export const procedure = authProcedure
         message: "Game not found or you are not the game owner",
       });
     }
-    let nextState: Games["state"];
+    let nextState: Game["state"];
     switch (input.direction) {
       case "forward": {
         switch (game.state.phase) {
