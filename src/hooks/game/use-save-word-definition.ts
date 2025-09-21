@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEventCallback } from "usehooks-ts";
 
-import type { WordId } from "~/db/database.gen";
 import { useGame } from "~/hooks/use-game";
 import { useInvalidateCache, useUpdateCache } from "~/hooks/use-update-cache";
+import type { WordId } from "~/server/validation";
 import { useTRPC } from "~/utils/trpc";
 
 const useChangeWordDefinitionCache = () => {

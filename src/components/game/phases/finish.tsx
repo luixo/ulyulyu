@@ -26,10 +26,10 @@ import { ErrorMessage } from "~/components/error-message";
 import { ResultCard } from "~/components/game/result-card";
 import { suspendedFallback } from "~/components/suspense-wrapper";
 import { UserContext } from "~/contexts/user-id-context";
-import type { UserId } from "~/db/database.gen";
 import { useCreateGame } from "~/hooks/use-create-game";
 import type { Game } from "~/hooks/use-game";
 import { useGame } from "~/hooks/use-game";
+import type { UserId } from "~/server/validation";
 import type { RouterOutput } from "~/utils/query";
 import { useTRPC } from "~/utils/trpc";
 

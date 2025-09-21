@@ -1,10 +1,10 @@
 import { TRPCError } from "@trpc/server";
 import { parse } from "cookie";
 
-import type { UserId } from "~/db/database.gen";
 import { extendAuthCookie } from "~/server/auth";
 import { middleware, procedure } from "~/server/trpc";
 import { upsertUser } from "~/server/user";
+import type { UserId } from "~/server/validation";
 import { userIdSchema } from "~/server/validation";
 import { SESSION_ID_HEADER, USER_ID_COOKIE } from "~/utils/auth";
 

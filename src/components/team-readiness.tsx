@@ -5,9 +5,9 @@ import BoringAvatar from "boring-avatars";
 import { entries } from "remeda";
 import { twMerge } from "tailwind-merge";
 
-import type { UserId } from "~/db/database.gen";
 import { useGame } from "~/hooks/use-game";
 import { useReadyAvatarProps } from "~/hooks/use-ready-avatar-props";
+import type { UserId } from "~/server/validation";
 import { getAvatar } from "~/utils/names";
 
 const COLORS = Array.from({ length: 6 }).map(

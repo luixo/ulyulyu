@@ -4,10 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import { useEventCallback } from "usehooks-ts";
 
 import { UserContext } from "~/contexts/user-id-context";
-import type { UserId, WordId } from "~/db/database.gen";
 import { useGame } from "~/hooks/use-game";
 import { useSubscription } from "~/hooks/use-subscription";
 import { useInvalidateCache, useUpdateCache } from "~/hooks/use-update-cache";
+import type { UserId, WordId } from "~/server/validation";
 import { useTRPC } from "~/utils/trpc";
 
 const useChangeGuessPlayerReadyCache = () => {

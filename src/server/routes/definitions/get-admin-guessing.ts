@@ -3,8 +3,8 @@ import { entries } from "remeda";
 import { z } from "zod";
 
 import { getDatabase } from "~/db";
-import type { UserId, WordId } from "~/db/database.gen";
 import { authProcedure } from "~/server/procedures";
+import type { UserId, WordId } from "~/server/validation";
 import { gameIdSchema } from "~/server/validation";
 import type { SubscriptionMapping } from "~/types/subscription";
 

@@ -1,6 +1,6 @@
 import { serialize } from "cookie";
 
-import type { UserId } from "~/db/database.gen";
+import type { UserId } from "~/server/validation";
 import { USER_ID_COOKIE } from "~/utils/auth";
 import { YEAR } from "~/utils/time";
 

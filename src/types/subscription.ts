@@ -1,4 +1,4 @@
-import type { Games, UserId, WordId } from "~/db/database.gen";
+import type { Games, UserId, WordId } from "~/server/validation";
 
 export type SubscriptionMapping = {
   "game:state": {

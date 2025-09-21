@@ -6,7 +6,7 @@ import type { SuperJSONResult } from "superjson";
 import { useEventCallback } from "usehooks-ts";
 
 import { SessionContext } from "~/contexts/session-context";
-import type { GameId } from "~/db/database.gen";
+import type { GameId } from "~/server/validation";
 import type { SubscriptionMapping } from "~/types/subscription";
 import { transformer } from "~/utils/transformer";
 

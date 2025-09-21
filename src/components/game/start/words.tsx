@@ -11,7 +11,6 @@ import { entries, keys, omit } from "remeda";
 
 import { ClickableIcon } from "~/components/base/clickable-icon";
 import { DEFINITIONS, WORDS } from "~/db/const";
-import type { WordId } from "~/db/database.gen";
 import {
   useAddWordMutation,
   useSubscribeToWordAddition,
@@ -27,6 +26,7 @@ import {
 } from "~/hooks/game/use-update-term";
 import type { Game } from "~/hooks/use-game";
 import { useGame } from "~/hooks/use-game";
+import type { WordId } from "~/server/validation";
 
 const NEW_WORD_ID = "__new__" as WordId;
 

@@ -8,7 +8,7 @@ import { Game } from "~/components/game/game";
 import { Header } from "~/components/header";
 import { suspendedFallback } from "~/components/suspense-wrapper";
 import { GameContext } from "~/contexts/game-context";
-import type { GameId } from "~/db/database.gen";
+import type { GameId } from "~/server/validation";
 import { useTRPC } from "~/utils/trpc";
 
 const GameWrapper = suspendedFallback<{ id: GameId }>(

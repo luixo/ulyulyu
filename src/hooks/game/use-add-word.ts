@@ -2,10 +2,10 @@ import { useMutation } from "@tanstack/react-query";
 import { omit } from "remeda";
 import { useEventCallback } from "usehooks-ts";
 
-import type { WordId } from "~/db/database.gen";
 import { type Game, useGame } from "~/hooks/use-game";
 import { useSubscription } from "~/hooks/use-subscription";
 import { useInvalidateCache, useUpdateCache } from "~/hooks/use-update-cache";
+import type { WordId } from "~/server/validation";
 import { useTRPC } from "~/utils/trpc";
 
 const useAddWordCache = () => {

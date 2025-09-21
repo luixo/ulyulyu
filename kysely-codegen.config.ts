@@ -7,16 +7,20 @@ import {
   RawExpressionNode,
   UnionExpressionNode,
 } from "kysely-codegen";
-import { values } from "remeda";
+import { entries, fromEntries } from "remeda";
 
 const TYPES = {
   user: new IdentifierNode("UserId"),
   game: new IdentifierNode("GameId"),
   word: new IdentifierNode("WordId"),
 };
+// UserId, GameId, WordId
 
 const config: Config = {
   outFile: "src/db/database.gen.ts",
+  customImports: fromEntries(
+    entries(TYPES).map(([, value]) => [value.name, "~/server/validation"]),
+  ),
   overrides: {
     columns: {
       "users.id": TYPES.user,
@@ -50,16 +54,6 @@ const config: Config = {
       ]),
     },
   },
-  transform: (code) =>
-    [
-      `import type { ${values(TYPES)
-        .map((type) => type.name)
-        .join(", ")} } from '~/server/validation';`,
-      `export type { ${values(TYPES)
-        .map((type) => type.name)
-        .join(", ")} };`,
-      code,
-    ].join("\n"),
 };
 
 export default config;

@@ -13,7 +13,6 @@ import {
   TeamsReadiness,
 } from "~/components/team-readiness";
 import { UserContext } from "~/contexts/user-id-context";
-import type { WordId } from "~/db/database.gen";
 import { useSubscribeToWordReveal } from "~/hooks/game/use-reveal-word";
 import {
   useSubscribeToTeamVoted,
@@ -21,6 +20,7 @@ import {
 } from "~/hooks/game/use-vote";
 import type { Game } from "~/hooks/use-game";
 import { useGame } from "~/hooks/use-game";
+import type { WordId } from "~/server/validation";
 import type { RouterOutput } from "~/utils/query";
 import { useTRPC } from "~/utils/trpc";
 

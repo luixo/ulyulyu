@@ -1,5 +1,5 @@
 import { getDatabase } from "~/db";
-import type { UserId } from "~/db/database.gen";
+import type { UserId } from "~/server/validation";
 
 export const upsertUser = async (userId: UserId, userAgent: string) => {
   const db = getDatabase();

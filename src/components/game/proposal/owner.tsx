@@ -11,12 +11,12 @@ import {
   TeamReadinessSkeleton,
   TeamsReadiness,
 } from "~/components/team-readiness";
-import type { WordId } from "~/db/database.gen";
 import { useGameStateMutation } from "~/hooks/game/use-game-state";
 import { useSubscribeToDefinitionReady } from "~/hooks/game/use-update-definition";
 import { useWordPositions } from "~/hooks/game/use-word-positions";
 import type { Game } from "~/hooks/use-game";
 import { useGame } from "~/hooks/use-game";
+import type { WordId } from "~/server/validation";
 import { useTRPC } from "~/utils/trpc";
 
 const Definition: React.FC<{

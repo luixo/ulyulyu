@@ -5,10 +5,10 @@ import { omit } from "remeda";
 import { useEventCallback } from "usehooks-ts";
 
 import { UserContext } from "~/contexts/user-id-context";
-import type { UserId } from "~/db/database.gen";
 import { useGame } from "~/hooks/use-game";
 import { useSubscription } from "~/hooks/use-subscription";
 import { useInvalidateCache, useUpdateCache } from "~/hooks/use-update-cache";
+import type { UserId } from "~/server/validation";
 import { useTRPC } from "~/utils/trpc";
 
 const useRemoveTeamCache = () => {

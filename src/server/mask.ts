@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-import type { GameId, UserId, WordId } from "~/db/database.gen";
+import type { GameId, UserId, WordId } from "~/server/validation";
 
 const algorithm = "aes-128-cbc" as const;
 const key = process.env.MASK_KEY || "1234567890abcdef";

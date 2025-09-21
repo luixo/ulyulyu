@@ -22,7 +22,6 @@ import { ErrorMessage } from "~/components/error-message";
 import { TeamsReadiness } from "~/components/team-readiness";
 import { UserContext } from "~/contexts/user-id-context";
 import { TEAMS } from "~/db/const";
-import type { UserId } from "~/db/database.gen";
 import { useJoinMutation, useSubscribeToJoin } from "~/hooks/game/use-join";
 import {
   useKickMutation,
@@ -42,6 +41,7 @@ import {
   useTeamReadinessChangeMutation,
 } from "~/hooks/game/use-team-readiness-change";
 import { useGame } from "~/hooks/use-game";
+import type { UserId } from "~/server/validation";
 
 const KickButton: React.FC<{
   teamId: UserId;

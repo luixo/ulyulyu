@@ -12,7 +12,6 @@ import {
   TeamsReadiness,
 } from "~/components/team-readiness";
 import { DEFINITIONS } from "~/db/const";
-import type { WordId } from "~/db/database.gen";
 import {
   useSubscribeToDefinitionReady,
   useUpdateDefinitionMutation,
@@ -20,6 +19,7 @@ import {
 import type { Game } from "~/hooks/use-game";
 import { useGame } from "~/hooks/use-game";
 import { useReadyAvatarProps } from "~/hooks/use-ready-avatar-props";
+import type { WordId } from "~/server/validation";
 import { useTRPC } from "~/utils/trpc";
 
 const Definition: React.FC<{

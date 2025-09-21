@@ -2,9 +2,9 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { getDatabase } from "~/db";
-import type { Games } from "~/db/database.gen";
 import { getEmitter } from "~/server/emitter";
 import { authProcedure } from "~/server/procedures";
+import type { Games } from "~/server/validation";
 import { gameIdSchema } from "~/server/validation";
 
 export const procedure = authProcedure

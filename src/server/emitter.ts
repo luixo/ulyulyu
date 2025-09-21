@@ -1,6 +1,6 @@
-import type { GameId } from "~/db/database.gen";
 import type { AuthContext } from "~/server/procedures";
 import { getPusherInstance } from "~/server/pusher";
+import type { GameId } from "~/server/validation";
 import type { SubscriptionMapping } from "~/types/subscription";
 import { getChannelName } from "~/utils/pusher";
 import { transformer } from "~/utils/transformer";
