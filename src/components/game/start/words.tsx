@@ -210,7 +210,7 @@ const AddWordButton: React.FC<{
   return (
     <Button
       color="primary"
-      onPress={() => () => {
+      onPress={() => {
         addMutation.mutate({
           gameId,
           term: word.term,
