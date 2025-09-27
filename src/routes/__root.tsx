@@ -30,12 +30,14 @@ import type { Language } from "~/utils/i18n";
 import { TRPCProvider, getLinks } from "~/utils/trpc";
 
 const RootComponent = () => {
-  const { user } = Route.useLoaderData();
+  const { user: initialUser } = Route.useLoaderData();
+  const userState = React.useState(initialUser);
   const queryClient = useQueryClient();
   const [sessionId, setSessionId] = useSessionStorage(
     SESSION_ID_KEY,
     `session-${Math.random()}`,
   );
+  const userId = userState[0].id;
   React.useEffect(() => {
     setSessionId(sessionId);
   }, [sessionId, setSessionId]);
@@ -47,7 +49,7 @@ const RootComponent = () => {
               sourceType: "ssr",
               headers: {
                 [SESSION_ID_HEADER]: sessionId,
-                cookie: getAuthCookie(user.id),
+                cookie: getAuthCookie(userId),
               },
             }
           : {
@@ -60,9 +62,9 @@ const RootComponent = () => {
   return (
     <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
       <SessionContext.Provider value={sessionId}>
-        <UserContext.Provider value={user}>
+        <UserContext.Provider value={userState}>
           <HeroUIProvider>
-            <Outlet />
+            <Outlet key={userId} />
             <ToastProvider />
             <Devtools />
           </HeroUIProvider>

@@ -29,7 +29,7 @@ const useChangeTeamReadinessCache = () => {
 
 export const useTeamReadinessChangeMutation = () => {
   const trpc = useTRPC();
-  const { id: selfUserId } = React.use(UserContext);
+  const [{ id: selfUserId }] = React.use(UserContext);
   const changeTeamReadinessCache = useChangeTeamReadinessCache();
   const { id } = useGame();
   const invalidateGameCache = useInvalidateCache(

@@ -24,7 +24,7 @@ const useAddTeamCache = () => {
 
 export const useJoinMutation = () => {
   const trpc = useTRPC();
-  const { id: selfUserId } = React.use(UserContext);
+  const [{ id: selfUserId }] = React.use(UserContext);
   const { id } = useGame();
   const invalidateGameCache = useInvalidateCache(
     trpc.games.get.queryFilter({ id }),

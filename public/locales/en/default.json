@@ -10,7 +10,11 @@
     }
   },
   "accountSettings": {
-    "title": "Account settings"
+    "title": "Account settings",
+    "override": {
+      "label": "User ID",
+      "button": "Change user ID"
+    }
   },
   "points_one": "{{count}} points",
   "points_few": "{{count}} points",

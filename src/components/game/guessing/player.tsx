@@ -91,7 +91,7 @@ const TeamsResults: React.FC<{
 }> = ({ definitions, revealMap, selfDefinition }) => {
   const { t } = useTranslation();
   const { teams } = useGame();
-  const { id: selfUserId } = React.use(UserContext);
+  const [{ id: selfUserId }] = React.use(UserContext);
   const teamsEntries = entries(revealMap).sort(([, teamA], [, teamB]) => {
     if (teamA === null) {
       return -1;
@@ -196,7 +196,7 @@ const TeamsCard = suspendedFallback<Props>(
         gameId,
       }),
     );
-    const { id: selfUserId } = React.use(UserContext);
+    const [{ id: selfUserId }] = React.use(UserContext);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const wordDefinitions = definitions[wordId]!;
     if (wordDefinitions.revealMap) {

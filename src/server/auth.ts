@@ -6,12 +6,17 @@ import { YEAR } from "~/utils/time";
 
 export const getAuthCookie = (id: UserId) => `${USER_ID_COOKIE}=${id}`;
 
-export const getSetAuthCookie = (id: UserId) => {
-  const expirationDate = new Date(Date.now() + YEAR);
-  return serialize(USER_ID_COOKIE, id, { expires: expirationDate, path: "/" });
-};
+export const getSetAuthCookie = (id: UserId, expirationDate: Date) =>
+  serialize(USER_ID_COOKIE, id, {
+    expires: expirationDate,
+    path: "/",
+    secure: true,
+  });
 
 export const extendAuthCookie = (headers: Headers, id: UserId) => {
   const setCookieHeader = headers.get("set-cookie") || "";
-  headers.set("set-cookie", setCookieHeader + getSetAuthCookie(id));
+  headers.set(
+    "set-cookie",
+    setCookieHeader + getSetAuthCookie(id, new Date(Date.now() + YEAR)),
+  );
 };

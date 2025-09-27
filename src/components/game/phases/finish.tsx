@@ -72,7 +72,7 @@ const ResultCell: React.FC<{
 
 const useItems = (data: GuessingData) => {
   const { isOwner, teams, words } = useGame();
-  const { id: selfUserId } = React.use(UserContext);
+  const [{ id: selfUserId }] = React.use(UserContext);
   return [
     ...entries(teams).sort(([teamAId], [teamBId]) => {
       if (teamAId === selfUserId) {
@@ -177,7 +177,7 @@ const ResultsTable = suspendedFallback(
     const { words, teams } = useGame();
     const columns = getColumns(words);
     const items = useItems(guessing);
-    const { id: selfUserId } = React.use(UserContext);
+    const [{ id: selfUserId }] = React.use(UserContext);
     const [selectedCell, setSelectedCell] = React.useState<
       | ((typeof items)[number]["definitions"][number] & {
           team: {

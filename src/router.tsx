@@ -26,6 +26,7 @@ import {
   i18nInitOptions,
 } from "~/utils/i18n";
 import { queryClientConfig } from "~/utils/query";
+import { YEAR } from "~/utils/time";
 import { transformer } from "~/utils/transformer";
 
 import { routeTree } from "./routeTree.gen";
@@ -58,7 +59,10 @@ export const createRouter = async () => {
     await serverOnly(async () => {
       const request = getWebRequest();
       await upsertUser(userId, request.headers.get("user-agent") || "unknown");
-      setResponseHeader("set-cookie", getSetAuthCookie(userId));
+      setResponseHeader(
+        "set-cookie",
+        getSetAuthCookie(userId, new Date(Date.now() + YEAR)),
+      );
     })();
   }
   const initialLanguage = getLanguageFromRequest(request);

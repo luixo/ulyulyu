@@ -25,7 +25,7 @@ const useRemoveTeamCache = () => {
 
 export const useLeaveMutation = () => {
   const trpc = useTRPC();
-  const { id: selfUserId } = React.use(UserContext);
+  const [{ id: selfUserId }] = React.use(UserContext);
   const removeTeamCache = useRemoveTeamCache();
   const { id } = useGame();
   const invalidateGameCache = useInvalidateCache(

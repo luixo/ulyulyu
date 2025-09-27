@@ -4,6 +4,7 @@ import { IoPerson as UserIcon } from "react-icons/io5";
 
 import { ClickableIcon } from "~/components/base/clickable-icon";
 import { UserIdInfo } from "~/components/settings/user-id-info";
+import { UserOverride } from "~/components/settings/user-override";
 
 export const AccountSettings = () => {
   const { t } = useTranslation();
@@ -20,6 +21,7 @@ export const AccountSettings = () => {
                 {t("accountSettings.title")}
               </h3>
               <UserIdInfo />
+              <UserOverride />
             </div>
           </ModalBody>
         </ModalContent>

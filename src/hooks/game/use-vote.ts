@@ -82,7 +82,7 @@ const useChangeGuessAdminReadyCache = () => {
 export const useVoteMutation = () => {
   const trpc = useTRPC();
   const { id } = useGame();
-  const { id: selfUserId } = React.use(UserContext);
+  const [{ id: selfUserId }] = React.use(UserContext);
   const invalidatePlayerGuessingCache = useInvalidateCache(
     trpc.definitions.getPlayerGuessing.queryFilter({ gameId: id }),
   );

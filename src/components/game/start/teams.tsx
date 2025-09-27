@@ -157,7 +157,7 @@ const SelfTeamInput: React.FC<{
 export const Teams = () => {
   const { t } = useTranslation();
   const { isOwner, id: gameId, teams, words } = useGame();
-  const { id: selfUserId } = React.use(UserContext);
+  const [{ id: selfUserId }] = React.use(UserContext);
   const selfTeam = teams[selfUserId];
   const [nickname, setNickname] = React.useState(selfTeam?.nickname ?? "");
   const joinMutation = useJoinMutation();

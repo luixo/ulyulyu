@@ -10,7 +10,11 @@
     }
   },
   "accountSettings": {
-    "title": "Настройки аккаунта"
+    "title": "Настройки аккаунта",
+    "override": {
+      "label": "ID пользователя",
+      "button": "Поменять ID"
+    }
   },
   "points_one": "{{count}} очко",
   "points_few": "{{count}} очка",

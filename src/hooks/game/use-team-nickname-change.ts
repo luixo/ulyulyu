@@ -29,7 +29,7 @@ const useChangeTeamNicknameCache = () => {
 
 export const useTeamNicknameChangeMutation = () => {
   const trpc = useTRPC();
-  const { id: selfUserId } = React.use(UserContext);
+  const [{ id: selfUserId }] = React.use(UserContext);
   const changeTeamNicknameCache = useChangeTeamNicknameCache();
   const { id } = useGame();
   const invalidateGameCache = useInvalidateCache(
