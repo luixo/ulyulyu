@@ -35,9 +35,9 @@ export const useUpdateTermMutation = () => {
 	);
 	return useMutation(
 		trpc.words.changeTerm.mutationOptions({
+			onError: () => invalidateGameCache(),
 			onMutate: (variables) =>
 				changeWordTermCache(variables.wordId, variables.term),
-			onError: () => invalidateGameCache(),
 		}),
 	);
 };
@@ -46,6 +46,8 @@ export const useSubscribeToTermUpdate = () => {
 	const changeWordTermCache = useChangeWordTermCache();
 	return useSubscription(
 		"word:term-update",
-		useEventCallback(({ wordId, term }) => changeWordTermCache(wordId, term)),
+		useEventCallback(({ wordId, term }) => {
+			changeWordTermCache(wordId, term);
+		}),
 	);
 };

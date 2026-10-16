@@ -29,33 +29,36 @@ import { TRPCProvider, getLinks } from "~/utils/trpc";
 
 const RootComponent = () => {
 	const { user: initialUser } = Route.useLoaderData();
+	// oxlint-disable-next-line react/hook-use-state
 	const userState = React.useState(initialUser);
 	const queryClient = useQueryClient();
 	const [sessionId, setSessionId] = useSessionStorage(
 		SESSION_ID_KEY,
-		`session-${Math.random()}`,
+		() => `session-${Math.random()}`,
 	);
 	const userId = userState[0].id;
 	React.useEffect(() => {
 		setSessionId(sessionId);
 	}, [sessionId, setSessionId]);
-	const [trpcClient] = React.useState(() =>
-		createTRPCClient<AppRouter>({
-			links: getLinks(
-				typeof window === "undefined"
-					? {
-							sourceType: "ssr",
-							headers: {
-								[SESSION_ID_HEADER]: sessionId,
-								cookie: getAuthCookie(userId),
+	const trpcClient = React.useMemo(
+		() =>
+			createTRPCClient<AppRouter>({
+				links: getLinks(
+					typeof window === "undefined"
+						? {
+								headers: {
+									[SESSION_ID_HEADER]: sessionId,
+									cookie: getAuthCookie(userId),
+								},
+								sourceType: "ssr",
+							}
+						: {
+								headers: { [SESSION_ID_HEADER]: sessionId },
+								sourceType: "csr",
 							},
-						}
-					: {
-							sourceType: "csr",
-							headers: { [SESSION_ID_HEADER]: sessionId },
-						},
-			),
-		}),
+				),
+			}),
+		[userId, sessionId],
 	);
 	return (
 		<TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
@@ -83,8 +86,40 @@ export type RouterContext = {
 };
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-	validateSearch: z.object({
-		debug: z.coerce.boolean().optional().catch(false),
+	component: RootComponent,
+	head: () => ({
+		links: [
+			{ href: appCss, rel: "stylesheet" },
+			{
+				href: "/apple-touch-icon.png",
+				rel: "apple-touch-icon",
+				sizes: "180x180",
+			},
+			{
+				href: "/favicon-32x32.png",
+				rel: "icon",
+				sizes: "32x32",
+				type: "image/png",
+			},
+			{
+				href: "/favicon-16x16.png",
+				rel: "icon",
+				sizes: "16x16",
+				type: "image/png",
+			},
+			{ color: "#fffff", href: "/site.webmanifest", rel: "manifest" },
+			{ href: "/favicon.ico", rel: "icon" },
+		],
+		meta: [
+			{
+				charSet: "utf8",
+			},
+			{
+				content: "width=device-width, initial-scale=1",
+				name: "viewport",
+			},
+			{ title: "Игра Улюлю" },
+		],
 	}),
 	loader: async ({ context }) => {
 		const { i18n, userId } = context;
@@ -93,51 +128,16 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 			.then(() => i18n.instance.loadNamespaces("default"));
 		const user = await serverOnly(async () => {
 			const db = getDatabase();
-			return await db
+			return db
 				.selectFrom("users")
 				.where("id", "=", userId)
 				.select(["id", "name"])
 				.executeTakeFirst();
 		})();
 		return {
-			user: user || { name: "never-happen", id: "never-happen" as UserId },
+			user: user || { id: "never-happen" as UserId, name: "never-happen" },
 		};
 	},
-	component: RootComponent,
-	head: () => ({
-		meta: [
-			{
-				charSet: "utf-8",
-			},
-			{
-				name: "viewport",
-				content: "width=device-width, initial-scale=1",
-			},
-			{ title: "Игра Улюлю" },
-		],
-		links: [
-			{ rel: "stylesheet", href: appCss },
-			{
-				rel: "apple-touch-icon",
-				sizes: "180x180",
-				href: "/apple-touch-icon.png",
-			},
-			{
-				rel: "icon",
-				type: "image/png",
-				sizes: "32x32",
-				href: "/favicon-32x32.png",
-			},
-			{
-				rel: "icon",
-				type: "image/png",
-				sizes: "16x16",
-				href: "/favicon-16x16.png",
-			},
-			{ rel: "manifest", href: "/site.webmanifest", color: "#fffff" },
-			{ rel: "icon", href: "/favicon.ico" },
-		],
-	}),
 	shellComponent: ({ children }) => (
 		<html lang="en" className="dark">
 			<head>
@@ -149,4 +149,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 			</body>
 		</html>
 	),
+	validateSearch: z.object({
+		debug: z.coerce.boolean().optional().catch(false),
+	}),
 });

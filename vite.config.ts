@@ -6,9 +6,6 @@ import devtoolsJson from "vite-plugin-devtools-json";
 import tsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-	server: {
-		port: 3000,
-	},
 	plugins: [
 		devtoolsJson(),
 		tsConfigPaths({
@@ -23,4 +20,7 @@ export default defineConfig({
 		}),
 		tailwindcss(),
 	],
+	server: {
+		port: 3000,
+	},
 });

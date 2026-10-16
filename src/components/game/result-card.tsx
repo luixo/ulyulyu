@@ -23,6 +23,7 @@ export const ResultCard: React.FC<
 				)}
 			</CardHeader>
 			<CardBody>{children}</CardBody>
+			{/* oxlint-disable-next-line typescript/strict-boolean-expressions */}
 			{footer ? <CardFooter>{footer}</CardFooter> : null}
 		</Card>
 	);

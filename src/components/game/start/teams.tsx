@@ -134,7 +134,7 @@ const SelfTeamInput: React.FC<{
 	label?: string;
 	isDisabled?: boolean;
 	endContent?: React.ReactNode;
-}> = ({ nickname, setNickname, label, endContent, isDisabled }) => {
+}> = ({ nickname, setNickname, label = "", endContent, isDisabled }) => {
 	const { t } = useTranslation();
 	return (
 		<Input
@@ -243,7 +243,7 @@ export const Teams = () => {
 														nickname,
 													});
 												}}
-												isVisible={nickname !== selfTeam?.nickname}
+												isVisible={nickname !== selfTeam.nickname}
 											/>
 										}
 									/>
@@ -265,19 +265,22 @@ export const Teams = () => {
 							)}
 						</>
 					)}
-					{keys(teamReadiness).length > 0 ? (
+					{keys(teamReadiness).length === 0 ? (
+						isOwner ? (
+							<h3>{t("pages.start.emptyTitle")}</h3>
+						) : null
+					) : (
 						<>
 							{isOwner ? null : <Divider />}
 							<TeamsReadiness
 								readiness={teamReadiness}
+								// oxlint-disable-next-line react/no-unstable-nested-components
 								endContent={({ teamId }) =>
 									isOwner ? <KickButton teamId={teamId} /> : null
 								}
 							/>
 						</>
-					) : isOwner ? (
-						<h3>{t("pages.start.emptyTitle")}</h3>
-					) : null}
+					)}
 				</div>
 			</CardBody>
 		</Card>

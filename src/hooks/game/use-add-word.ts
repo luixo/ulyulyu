@@ -1,7 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
 import { omit } from "remeda";
 import { useEventCallback } from "usehooks-ts";
-import { type Game, useGame } from "~/hooks/use-game";
+import { useGame } from "~/hooks/use-game";
+import type { Game } from "~/hooks/use-game";
 import { useSubscription } from "~/hooks/use-subscription";
 import { useInvalidateCache, useUpdateCache } from "~/hooks/use-update-cache";
 import type { WordId } from "~/server/validation";
@@ -41,24 +42,26 @@ export const useAddWordMutation = () => {
 	const removeWordCache = useRemoveWordCache();
 	return useMutation(
 		trpc.words.put.mutationOptions({
+			onError: () => invalidateGameCache(),
 			onMutate: (variables) => {
-				const id = Math.random().toString() as WordId;
-				addWordCache(id, {
+				// Runs on a mutation event, not during render; this ID tracks an optimistic word.
+				// oxlint-disable-next-line react/purity
+				const wordId = Math.random().toString() as WordId;
+				addWordCache(wordId, {
+					definition: variables.definition,
 					position: Infinity,
 					term: variables.term,
-					definition: variables.definition,
 				});
-				return { id };
+				return { id: wordId };
 			},
 			onSuccess: (result, variables, context) => {
 				removeWordCache(context.id);
 				addWordCache(result.id, {
+					definition: variables.definition,
 					position: result.position,
 					term: variables.term,
-					definition: variables.definition,
 				});
 			},
-			onError: () => invalidateGameCache(),
 		}),
 	);
 };
@@ -67,6 +70,8 @@ export const useSubscribeToWordAddition = () => {
 	const addWordCache = useAddWordCache();
 	return useSubscription(
 		"word:add",
-		useEventCallback(({ id, ...word }) => addWordCache(id, word)),
+		useEventCallback(({ id, ...word }) => {
+			addWordCache(id, word);
+		}),
 	);
 };

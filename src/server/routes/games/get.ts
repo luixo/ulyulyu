@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
+import { pullObject } from "remeda";
 import { z } from "zod";
 import { getDatabase } from "~/db";
 import { authProcedure } from "~/server/procedures";
-import type { UserId, WordId } from "~/server/validation";
 import { gameIdSchema } from "~/server/validation";
 
 export const procedure = authProcedure
@@ -46,33 +46,21 @@ export const procedure = authProcedure
 		const isOwner = game.ownerId === ctx.auth.userId;
 		return {
 			id: game.id,
-			state: game.state,
 			isOwner,
-			teams: teams.reduce<Record<UserId, { nickname: string; ready: boolean }>>(
-				(acc, { nickname, ready, teamId }) => ({
-					...acc,
-					[teamId]: {
-						nickname,
-						ready,
-					},
-				}),
-				{},
+			state: game.state,
+			teams: pullObject(
+				teams,
+				({ teamId }) => teamId,
+				({ nickname, ready }) => ({ nickname, ready }),
 			),
-			words: words.reduce<
-				Record<
-					WordId,
-					{ position: number; term: string; definition: string | null }
-				>
-			>(
-				(acc, { wordId, position, term, definition, localDefinition }) => ({
-					...acc,
-					[wordId]: {
-						position,
-						term,
-						definition: isOwner ? definition : localDefinition,
-					},
+			words: pullObject(
+				words,
+				({ wordId }) => wordId,
+				({ position, term, definition, localDefinition }) => ({
+					definition: isOwner ? definition : localDefinition,
+					position,
+					term,
 				}),
-				{},
 			),
 		};
 	});

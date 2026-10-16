@@ -88,13 +88,13 @@ export const useVoteMutation = () => {
 	const changeGuessPlayerVoteCache = useChangeGuessPlayerVoteCache();
 	return useMutation(
 		trpc.definitions.vote.mutationOptions({
+			onError: () => {
+				void invalidatePlayerGuessingCache();
+				void invalidatePlayerGuessingCache();
+			},
 			onMutate: (variables) => {
 				changeGuessPlayerReadyCache(variables.wordId, selfUserId, true);
 				changeGuessPlayerVoteCache(variables.wordId, variables.guessUserId);
-			},
-			onError: () => {
-				invalidatePlayerGuessingCache();
-				invalidatePlayerGuessingCache();
 			},
 		}),
 	);

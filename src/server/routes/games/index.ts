@@ -7,10 +7,10 @@ import { procedure as put } from "./put";
 import { procedure as start } from "./start";
 
 export const router = baseRouter({
+	changeState,
+	changeStateCurrentPosition,
 	get,
 	getAll,
 	put,
 	start,
-	changeState,
-	changeStateCurrentPosition,
 });

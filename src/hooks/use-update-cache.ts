@@ -1,9 +1,6 @@
 import type React from "react";
-import {
-	type DataTag,
-	type QueryFilters,
-	useQueryClient,
-} from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import type { DataTag, QueryFilters } from "@tanstack/react-query";
 import type { TRPCQueryKey } from "@trpc/tanstack-react-query";
 import { useEventCallback } from "usehooks-ts";
 import { updateSetStateAction } from "~/utils/react";
@@ -13,7 +10,7 @@ export const useUpdateCache = <Output>(
 ) => {
 	const queryClient = useQueryClient();
 	return useEventCallback((setStateAction: React.SetStateAction<Output>) => {
-		let savedPrevValue: Output | undefined;
+		let savedPrevValue: Output | undefined = undefined;
 		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 		queryClient.setQueryData<Output>(queryFilters.queryKey!, (prevOutput) => {
 			if (prevOutput === undefined) {

@@ -11,13 +11,17 @@ export const Game = () => {
 	useSubscribeToGameState();
 	useSubscribeToWordPositionChange();
 	switch (game.state.phase) {
-		case "start":
+		case "start": {
 			return <StartPhase />;
-		case "proposal":
+		}
+		case "proposal": {
 			return <ProposalPhase state={game.state} />;
-		case "guessing":
+		}
+		case "guessing": {
 			return <GuessingPhase state={game.state} />;
-		case "finish":
+		}
+		case "finish": {
 			return <FinishPhase state={game.state} />;
+		}
 	}
 };

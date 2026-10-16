@@ -1,14 +1,12 @@
 import { getFormatConfig } from "@luixo/configs";
 
 export default getFormatConfig({
-	tailwind: {
-		stylesheet: "src/styles/app.css",
-	},
+	ignorePatterns: [".output", "*.gen.ts"],
 	imports: {
 		customGroups: [
 			{
-				groupName: "react",
 				elementNamePattern: ["react", "react-dom/client"],
+				groupName: "react",
 			},
 		],
 		groups: [
@@ -21,5 +19,7 @@ export default getFormatConfig({
 		],
 		internalPattern: ["~/"],
 	},
-	ignorePatterns: [".output", "*.gen.ts"],
+	tailwind: {
+		stylesheet: "src/styles/app.css",
+	},
 });

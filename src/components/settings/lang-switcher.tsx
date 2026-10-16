@@ -2,21 +2,22 @@ import type React from "react";
 import { Button } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { keys } from "remeda";
-import { type Language, languages, setCookieLanguage } from "~/utils/i18n";
+import { languages, setCookieLanguage } from "~/utils/i18n";
+import type { Language as LanguageType } from "~/utils/i18n";
 
-const LOCALE_NAMES: Partial<Record<Language, string>> = {
-	ru: "Русский",
+const LOCALE_NAMES: Partial<Record<LanguageType, string>> = {
 	en: "English",
+	ru: "Русский",
 };
 
-const Language: React.FC<{ lang: Language }> = ({ lang }) => {
+const Language: React.FC<{ lang: LanguageType }> = ({ lang }) => {
 	const { i18n } = useTranslation();
 	return (
 		<Button
 			color="primary"
 			onPress={() => {
-				i18n.changeLanguage(lang);
-				setCookieLanguage(lang);
+				void i18n.changeLanguage(lang);
+				void setCookieLanguage(lang);
 			}}
 		>
 			{LOCALE_NAMES[lang] ?? "unknown"}

@@ -36,7 +36,7 @@ export const procedure = authProcedure
 			.executeTakeFirst();
 		const emitter = getEmitter(ctx, input.gameId);
 		emitter.trigger("team:readiness", {
-			userId: ctx.auth.userId,
 			ready: input.ready,
+			userId: ctx.auth.userId,
 		});
 	});

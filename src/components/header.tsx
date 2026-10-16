@@ -16,7 +16,9 @@ export const Header: React.FC<{
 				className="bg-gradient-to-tr from-blue-500 to-pink-500 text-8xl font-extrabold"
 				Component={LogoIcon}
 				size={56}
-				onClick={() => router.navigate({ to: "/" })}
+				onClick={() => {
+					void router.navigate({ to: "/" });
+				}}
 			/>
 			{title}
 			<div className="flex flex-row items-center gap-4 p-4">

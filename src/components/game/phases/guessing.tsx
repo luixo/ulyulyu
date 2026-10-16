@@ -3,7 +3,8 @@ import { Card, CardBody } from "@heroui/react";
 import { entries } from "remeda";
 import { GuessingPhaseOwner } from "~/components/game/guessing/owner";
 import { GuessingPhasePlayer } from "~/components/game/guessing/player";
-import { type Game, useGame } from "~/hooks/use-game";
+import { useGame } from "~/hooks/use-game";
+import type { Game } from "~/hooks/use-game";
 
 export const GuessingPhase: React.FC<{
 	state: Extract<Game["state"], { phase: "guessing" }>;

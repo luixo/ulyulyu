@@ -40,15 +40,15 @@ export const procedure = authProcedure
 		await db
 			.insertInto("teams")
 			.values({
-				userId: ctx.auth.userId,
 				gameId: input.gameId,
 				nickname: input.nickname,
 				ready: false,
+				userId: ctx.auth.userId,
 			})
 			.executeTakeFirst();
 		const emitter = getEmitter(ctx, input.gameId);
 		emitter.trigger("team:join", {
-			userId: ctx.auth.userId,
 			nickname: input.nickname,
+			userId: ctx.auth.userId,
 		});
 	});

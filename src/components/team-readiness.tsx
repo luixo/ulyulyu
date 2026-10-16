@@ -68,6 +68,7 @@ export const TeamReadinessSkeleton: React.FC<{ amount: number }> = ({
 }) => (
 	<div className="flex flex-col gap-2">
 		{Array.from({ length: amount }).map((_, index) => (
+			// oxlint-disable-next-line react/no-array-index-key
 			<TeamReadinessLineSkeleton key={index} />
 		))}
 	</div>

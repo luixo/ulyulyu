@@ -28,8 +28,8 @@ export const useRemoveWordMutation = () => {
 	);
 	return useMutation(
 		trpc.words.remove.mutationOptions({
-			onMutate: (variables) => removeWordCache(variables.id),
 			onError: () => invalidateGameCache(),
+			onMutate: (variables) => removeWordCache(variables.id),
 		}),
 	);
 };
@@ -38,6 +38,8 @@ export const useSubscribeToWordRemoval = () => {
 	const removeWordCache = useRemoveWordCache();
 	return useSubscription(
 		"word:remove",
-		useEventCallback(({ id }) => removeWordCache(id)),
+		useEventCallback(({ id }) => {
+			removeWordCache(id);
+		}),
 	);
 };

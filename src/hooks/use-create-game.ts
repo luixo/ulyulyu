@@ -18,7 +18,7 @@ export const useCreateGame = () => {
 						state: "start",
 					},
 				]);
-				router.navigate({ to: "/games/$id", params: { id: game.id } });
+				void router.navigate({ params: { id: game.id }, to: "/games/$id" });
 			},
 		}),
 	);

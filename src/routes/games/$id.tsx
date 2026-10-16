@@ -16,6 +16,8 @@ export const Route = createFileRoute("/games/$id")({
 				trpc.games.get.queryOptions({ id: params.id as GameId }),
 			);
 		} catch {
+			// This is expected by Tanstack Router
+			// oxlint-disable-next-line typescript/only-throw-error
 			throw redirect({ to: "/" });
 		}
 	},

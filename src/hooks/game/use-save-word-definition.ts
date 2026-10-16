@@ -32,9 +32,9 @@ export const useSaveWordDefinitionMutation = () => {
 
 	return useMutation(
 		trpc.words.changeDefinition.mutationOptions({
+			onError: () => invalidateGameCache(),
 			onMutate: (variables) =>
 				changeWordDefinitionCache(variables.wordId, variables.definition),
-			onError: () => invalidateGameCache(),
 		}),
 	);
 };

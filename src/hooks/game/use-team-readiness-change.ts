@@ -35,9 +35,9 @@ export const useTeamReadinessChangeMutation = () => {
 	);
 	return useMutation(
 		trpc.teams.changeReadiness.mutationOptions({
+			onError: () => invalidateGameCache(),
 			onMutate: (variables) =>
 				changeTeamReadinessCache(selfUserId, variables.ready),
-			onError: () => invalidateGameCache(),
 		}),
 	);
 };
@@ -46,8 +46,8 @@ export const useSubscribeToTeamReadyChange = () => {
 	const changeTeamReadinessCache = useChangeTeamReadinessCache();
 	return useSubscription(
 		"team:readiness",
-		useEventCallback(({ userId, ready }) =>
-			changeTeamReadinessCache(userId, ready),
-		),
+		useEventCallback(({ userId, ready }) => {
+			changeTeamReadinessCache(userId, ready);
+		}),
 	);
 };

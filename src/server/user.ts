@@ -8,7 +8,13 @@ export const upsertUser = async (userId: UserId, userAgent: string) => {
 		.where("id", "=", userId)
 		.select(["id", "name"])
 		.executeTakeFirst();
-	if (!user) {
+	if (user) {
+		void db
+			.updateTable("users")
+			.where("users.id", "=", userId)
+			.set({ updatedAt: new Date() })
+			.executeTakeFirst();
+	} else {
 		const newUser = await db
 			.insertInto("users")
 			.values({
@@ -18,12 +24,6 @@ export const upsertUser = async (userId: UserId, userAgent: string) => {
 			.returning(["users.id", "users.name"])
 			.executeTakeFirstOrThrow();
 		return newUser;
-	} else {
-		void db
-			.updateTable("users")
-			.where("users.id", "=", userId)
-			.set({ updatedAt: new Date() })
-			.executeTakeFirst();
 	}
 	return user;
 };

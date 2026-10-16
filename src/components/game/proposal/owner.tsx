@@ -27,10 +27,10 @@ const Definition: React.FC<{
 			<Textarea
 				label={t("pages.proposal.owner.termLabel", { term: word.term })}
 				value={
-					!definitionHidden
-						? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+					definitionHidden
+						? t("pages.proposal.owner.definitionMask")
+						: // oxlint-disable-next-line typescript/no-non-null-assertion
 							word.definition!
-						: t("pages.proposal.owner.definitionMask")
 				}
 				isReadOnly
 				classNames={{
@@ -86,10 +86,10 @@ const NextButton = suspendedFallback<{ word: Game["words"][WordId] }>(
 			<Button
 				color="primary"
 				onPress={() =>
-					gameStateMutation.mutate({ id: gameId, direction: "forward" })
+					gameStateMutation.mutate({ direction: "forward", id: gameId })
 				}
 				isDisabled={isDisabled}
-				className={word.position !== lastWordPosition ? "invisible" : undefined}
+				className={word.position === lastWordPosition ? undefined : "invisible"}
 			>
 				{t("components.nextPhase.button")}
 			</Button>

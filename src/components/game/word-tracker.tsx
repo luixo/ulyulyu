@@ -9,7 +9,7 @@ export const WordTracker: React.FC<{
 }> = ({ className }) => {
 	const { t } = useTranslation();
 	const { words, state } = useGame();
-	const wordsValues = values(words).sort(
+	const wordsValues = values(words).toSorted(
 		(wordA, wordB) => wordA.position - wordB.position,
 	);
 	if (state.phase !== "guessing" && state.phase !== "proposal") {

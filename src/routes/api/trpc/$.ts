@@ -12,26 +12,27 @@ type Callback = Extract<
 		"/api/trpc/$",
 		undefined
 	>,
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type typescript/ban-types
 	Function
 >;
 
 const callback: Callback = async ({ request }) =>
 	fetchRequestHandler({
-		endpoint: "/api/trpc",
-		req: request,
-		router: appRouter,
 		createContext: (opts) => opts,
+		endpoint: "/api/trpc",
 		onError: ({ error, type, path, ctx }) => {
 			if (!ctx) {
 				return;
 			}
+			// oxlint-disable-next-line no-console
 			console.error(
 				`[${error.code}] [${
 					ctx.req.headers.get("user-agent") ?? "no-user-agent"
 				}] ${type} "${path}": ${error.message}`,
 			);
 		},
+		req: request,
+		router: appRouter,
 	});
 
 export const ServerRoute = createServerFileRoute("/api/trpc/$").methods({

@@ -13,9 +13,9 @@ import {
 export const procedure = authProcedure
 	.input(
 		z.strictObject({
+			definition: definitionSchema.nullable(),
 			gameId: gameIdSchema,
 			wordId: wordIdSchema,
-			definition: definitionSchema.nullable(),
 		}),
 	)
 	.mutation(async ({ ctx, input }) => {
@@ -58,8 +58,8 @@ export const procedure = authProcedure
 			.insertInto("definitions")
 			.values({
 				definition: input.definition,
-				wordId: input.wordId,
 				userId: ctx.auth.userId,
+				wordId: input.wordId,
 			})
 			.onConflict((oc) =>
 				oc
@@ -76,9 +76,9 @@ export const procedure = authProcedure
 		if (prevHasDefinition !== nextHasDefinition) {
 			const emitter = getEmitter(ctx, input.gameId);
 			emitter.trigger("definition:ready", {
+				ready: Boolean(input.definition),
 				teamId: ctx.auth.userId,
 				wordId: input.wordId,
-				ready: Boolean(input.definition),
 			});
 		}
 	});

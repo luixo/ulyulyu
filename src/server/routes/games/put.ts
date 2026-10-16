@@ -13,10 +13,10 @@ export const procedure = authProcedure.mutation(async ({ ctx }) => {
 	const game = await db
 		.insertInto("games")
 		.values({
+			createdAt: now,
 			id: gameId,
 			ownerId: ctx.auth.userId,
 			state: { phase: "start" },
-			createdAt: now,
 		})
 		.returning(["games.id", "games.createdAt"])
 		.executeTakeFirstOrThrow();

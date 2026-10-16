@@ -72,7 +72,7 @@ const useItems = (data: GuessingData) => {
 	const { isOwner, teams, words } = useGame();
 	const [{ id: selfUserId }] = React.use(UserContext);
 	return [
-		...entries(teams).sort(([teamAId], [teamBId]) => {
+		...entries(teams).toSorted(([teamAId], [teamBId]) => {
 			if (teamAId === selfUserId) {
 				return -1;
 			}
@@ -83,8 +83,6 @@ const useItems = (data: GuessingData) => {
 		}),
 		[null, { nickname: undefined }] as const,
 	].map(([teamId, team]) => ({
-		id: teamId,
-		nickname: team.nickname,
 		definitions: entries(words).map(([wordId, word]) => {
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			const wordDefinition = data[wordId]!;
@@ -94,12 +92,16 @@ const useItems = (data: GuessingData) => {
 				);
 			}
 			const revealValues = values(wordDefinition.revealMap);
-			const selfVote = revealValues.find(
-				(value) => value && value.id === teamId,
-			);
+			const selfVote = revealValues.find((value) => value?.id === teamId);
 			const selfVoteCorrect = selfVote ? selfVote.vote === null : false;
+			// oxlint-disable-next-line typescript/strict-boolean-expressions
 			const voters = revealValues
-				.filter((value) => (value ? value.vote === teamId : null))
+				.filter((value) => {
+					if (value === null) {
+						return null;
+					}
+					return value.vote === teamId;
+				})
 				.filter(isNonNullish)
 				.map((value) => ({
 					id: value.id,
@@ -112,20 +114,15 @@ const useItems = (data: GuessingData) => {
 					);
 				}
 				return {
-					id: wordId,
 					definition:
 						teamId === null
 							? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 								word.definition!
 							: wordDefinition.definitions[teamId],
-					voters,
+					id: wordId,
 					selfVoteCorrect,
+					voters,
 				};
-			}
-			if (!selfUserId) {
-				throw new Error(
-					`Expected to have selfUserId as not an owner of the game`,
-				);
 			}
 			const revealData = entries(wordDefinition.revealMap).find(
 				([, revealDatum]) => (revealDatum ? revealDatum.id : null) === teamId,
@@ -137,17 +134,19 @@ const useItems = (data: GuessingData) => {
 			}
 			const [obfuscatedTeamId] = revealData;
 			return {
-				id: wordId,
 				definition:
 					selfUserId === teamId
 						? word.definition
 						: (wordDefinition.definitions as Record<string, string>)[
 								obfuscatedTeamId
 							],
-				voters,
+				id: wordId,
 				selfVoteCorrect,
+				voters,
 			};
 		}),
+		id: teamId,
+		nickname: team.nickname,
 	}));
 };
 
@@ -155,7 +154,7 @@ const getColumns = (
 	words: Game["words"],
 ): [string, { term: string; firstColumn?: boolean }][] => [
 	["*", { term: "*" }],
-	...entries(words).sort(
+	...entries(words).toSorted(
 		([, wordA], [, wordB]) => wordA.position - wordB.position,
 	),
 ];
@@ -189,7 +188,7 @@ const ResultsTable = suspendedFallback(
 			<>
 				<Table aria-label="Results" isStriped>
 					<TableHeader columns={columns}>
-						{([wordId, { term, firstColumn }]) => (
+						{([wordId, { term, firstColumn = false }]) => (
 							<TableColumn
 								key={wordId}
 								className={firstColumn ? "text-left" : "text-center"}
@@ -199,7 +198,7 @@ const ResultsTable = suspendedFallback(
 						)}
 					</TableHeader>
 					<TableBody items={items}>
-						{({ id: teamId, nickname, definitions }) => (
+						{({ id: teamId, nickname = "", definitions }) => (
 							<TableRow key={teamId}>
 								{(columnKey) => {
 									const tableCellClass =
@@ -216,7 +215,6 @@ const ResultsTable = suspendedFallback(
 											>
 												{nickname
 													? t("pages.finish.rowName", {
-															team: nickname,
 															points: t("points", {
 																count: definitions.reduce(
 																	(acc, definition) =>
@@ -226,6 +224,7 @@ const ResultsTable = suspendedFallback(
 																	0,
 																),
 															}),
+															team: nickname,
 														})
 													: t("pages.finish.actualTeamNickname")}
 											</TableCell>
@@ -287,7 +286,7 @@ const ResultsTable = suspendedFallback(
 													{t("pages.guessing.owner.successfulVote")}
 												</span>
 											) : null}
-											{selectedCell.voters.length !== 0 ? (
+											{selectedCell.voters.length === 0 ? null : (
 												<i className="text-secondary">
 													{t("pages.guessing.owner.otherVote", {
 														count: selectedCell.voters.length,
@@ -297,7 +296,7 @@ const ResultsTable = suspendedFallback(
 															.join(", "),
 													})}
 												</i>
-											) : null}
+											)}
 										</div>
 									}
 								>
@@ -316,15 +315,15 @@ const ResultsTable = suspendedFallback(
 		const columns = getColumns(words);
 		const items = [
 			...entries(teams).map(([teamId, team]) => ({
-				teamId,
 				team,
+				teamId,
 			})),
-			{ teamId: null, team: null },
+			{ team: null, teamId: null },
 		];
 		return (
 			<Table isStriped>
 				<TableHeader columns={columns}>
-					{([wordId, { term, firstColumn }]) => (
+					{([wordId, { term, firstColumn = false }]) => (
 						<TableColumn
 							key={wordId}
 							className={firstColumn ? "text-left" : "text-center"}
@@ -389,7 +388,11 @@ const ToIndexButton = () => {
 	const { t } = useTranslation();
 	const router = useRouter();
 	return (
-		<Button onPress={() => router.navigate({ to: "/" })}>
+		<Button
+			onPress={() => {
+				void router.navigate({ to: "/" });
+			}}
+		>
 			{t("pages.finish.back.button")}
 		</Button>
 	);

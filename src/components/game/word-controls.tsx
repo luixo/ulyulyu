@@ -40,30 +40,29 @@ export const WordControls: React.FC<
 						? undefined
 						: () =>
 								changeWordPositionMutation.mutate({
-									id: gameId,
 									direction: "backward",
+									id: gameId,
 								})
 				}
 				disabled={currentWord.position === firstWordPosition}
 				size={32}
 			/>
 			{children}
-			{
-				<ClickableIcon
-					Component={NextIcon}
-					onClick={
-						currentWord.position === lastWordPosition
-							? undefined
-							: () =>
-									changeWordPositionMutation.mutate({
-										id: gameId,
-										direction: "forward",
-									})
-					}
-					disabled={currentWord.position === lastWordPosition}
-					size={32}
-				/>
-			}
+
+			<ClickableIcon
+				Component={NextIcon}
+				onClick={
+					currentWord.position === lastWordPosition
+						? undefined
+						: () =>
+								changeWordPositionMutation.mutate({
+									direction: "forward",
+									id: gameId,
+								})
+				}
+				disabled={currentWord.position === lastWordPosition}
+				size={32}
+			/>
 		</div>
 	);
 };

@@ -1,11 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import { entries } from "remeda";
+import { mapValues } from "remeda";
 import { z } from "zod";
 import { getDatabase } from "~/db";
 import { authProcedure } from "~/server/procedures";
-import type { UserId, WordId } from "~/server/validation";
 import { gameIdSchema } from "~/server/validation";
-import type { SubscriptionMapping } from "~/types/subscription";
 import { getPackedResults, getRevealMap } from "./get-player-guessing";
 
 export const procedure = authProcedure
@@ -40,51 +38,26 @@ export const procedure = authProcedure
 		}
 		const packedResults = getPackedResults(
 			results,
-			({ revealed, originalDefinition }) => ({ revealed, originalDefinition }),
+			({ revealed, originalDefinition }) => ({ originalDefinition, revealed }),
 			({ guessUserId, definition, wordId, teamId }) => {
-				if (!definition) {
+				if (definition === null || definition === "") {
 					throw new Error(
 						`Expected to have definition for team "${teamId}" at word "${wordId}" at guessing phase`,
 					);
 				}
-				return { vote: guessUserId, definition };
+				return { definition, vote: guessUserId };
 			},
 		);
 
-		return entries(packedResults).reduce<
-			Record<
-				WordId,
-				{
-					originalDefinition: string;
-					definitions: Record<UserId, string>;
-					readiness: Record<UserId, boolean>;
-					revealMap: SubscriptionMapping["guessing:reveal"]["mapping"] | null;
-				}
-			>
-		>(
-			(acc, [wordId, { originalDefinition, teamMapping, revealed }]) => ({
-				...acc,
-				[wordId]: {
-					originalDefinition,
-					definitions: entries(teamMapping).reduce(
-						(subacc, [teamId, { definition }]) => ({
-							...subacc,
-							[teamId]: definition,
-						}),
-						{},
-					),
-					readiness: entries(teamMapping).reduce(
-						(subacc, [teamId, { vote }]) => ({
-							...subacc,
-							[teamId]: Boolean(vote),
-						}),
-						{},
-					),
-					revealMap: revealed
-						? getRevealMap(input.gameId, ctx.auth.userId, wordId, teamMapping)
-						: null,
-				},
+		return mapValues(
+			packedResults,
+			({ originalDefinition, teamMapping, revealed }, wordId) => ({
+				definitions: mapValues(teamMapping, ({ definition }) => definition),
+				originalDefinition,
+				readiness: mapValues(teamMapping, ({ vote }) => Boolean(vote)),
+				revealMap: revealed
+					? getRevealMap(input.gameId, ctx.auth.userId, wordId, teamMapping)
+					: null,
 			}),
-			{},
 		);
 	});

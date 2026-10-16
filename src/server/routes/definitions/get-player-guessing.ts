@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { entries, fromEntries } from "remeda";
+import { entries, fromEntries, mapValues } from "remeda";
 import { z } from "zod";
 import { getDatabase } from "~/db";
 import { maskUserId } from "~/server/mask";
@@ -10,7 +10,7 @@ import type { SubscriptionMapping } from "~/types/subscription";
 
 const sortByKey = <T extends Record<string, unknown>>(object: T): T =>
 	fromEntries(
-		entries(object).sort(([keyA], [keyB]) => keyA.localeCompare(keyB)),
+		entries(object).toSorted(([keyA], [keyB]) => keyA.localeCompare(keyB)),
 	) as T;
 
 type TeamMapping = Record<UserId, { vote: UserId | null; definition: string }>;
@@ -114,16 +114,16 @@ export const procedure = authProcedure
 			results,
 			({ ownerId, revealed, realDefinition }) => ({
 				ownerId,
-				revealed,
 				realDefinition,
+				revealed,
 			}),
 			({ guessUserId, definition, wordId, teamId }) => {
-				if (!definition) {
+				if (definition === null) {
 					throw new Error(
 						`Expected to have definition for team "${teamId}" at word "${wordId}" at guessing phase`,
 					);
 				}
-				return { vote: guessUserId, definition };
+				return { definition, vote: guessUserId };
 			},
 		);
 		return entries(packedResults).reduce<
@@ -154,17 +154,11 @@ export const procedure = authProcedure
 							{ [maskUserId(ownerId, input.gameId, wordId)]: realDefinition },
 						),
 					),
-					vote: selfVote ? maskUserId(selfVote, input.gameId, wordId) : null,
-					readiness: entries(teamMapping).reduce(
-						(subacc, [teamId, { vote }]) => ({
-							...subacc,
-							[teamId]: Boolean(vote),
-						}),
-						{},
-					),
+					readiness: mapValues(teamMapping, ({ vote }) => Boolean(vote)),
 					revealMap: revealed
 						? getRevealMap(input.gameId, ownerId, wordId, teamMapping)
 						: null,
+					vote: selfVote ? maskUserId(selfVote, input.gameId, wordId) : null,
 				},
 			};
 		}, {});

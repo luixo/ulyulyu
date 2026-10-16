@@ -28,7 +28,7 @@ const Definition: React.FC<{
 	const { id: gameId } = useGame();
 	const updateDefinitionMutation = useUpdateDefinitionMutation();
 	const [localDefinition, setLocalDefinition] = React.useState<string>(
-		word.definition || "",
+		word.definition ?? "",
 	);
 
 	const readyAvatarProps = useReadyAvatarProps(true);
@@ -58,7 +58,7 @@ const Definition: React.FC<{
 						) : (
 							<Button
 								color="primary"
-								onPress={() => () => {
+								onPress={() => {
 									const nextDefinition = localDefinition || "";
 									if (
 										word.definition === nextDefinition ||
@@ -70,9 +70,9 @@ const Definition: React.FC<{
 										return;
 									}
 									updateDefinitionMutation.mutate({
+										definition: nextDefinition,
 										gameId,
 										wordId,
-										definition: nextDefinition,
 									});
 								}}
 							>

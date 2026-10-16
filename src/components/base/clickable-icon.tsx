@@ -7,7 +7,7 @@ export const ClickableIcon: React.FC<
 		Component: React.ComponentType<IconBaseProps>;
 		disabled?: boolean;
 	} & Pick<React.HTMLAttributes<HTMLOrSVGElement>, "onClick">
-> = ({ Component, onClick, disabled, className, ...props }) => (
+> = ({ Component, onClick, disabled = false, className, ...props }) => (
 	<Component
 		{...props}
 		className={twMerge(

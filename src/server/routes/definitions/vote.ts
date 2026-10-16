@@ -14,8 +14,8 @@ export const procedure = authProcedure
 	.input(
 		z.strictObject({
 			gameId: gameIdSchema,
-			wordId: wordIdSchema,
 			guessUserId: guessUserIdSchema,
+			wordId: wordIdSchema,
 		}),
 	)
 	.mutation(async ({ ctx, input }) => {
@@ -73,8 +73,8 @@ export const procedure = authProcedure
 			.executeTakeFirst();
 		const emitter = getEmitter(ctx, input.gameId);
 		emitter.trigger("guessing:ready", {
+			ready: Boolean(input.guessUserId),
 			teamId: ctx.auth.userId,
 			wordId: input.wordId,
-			ready: Boolean(input.guessUserId),
 		});
 	});

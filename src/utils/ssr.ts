@@ -11,13 +11,13 @@ export const getTrpcClient = (ctx: RouterContext) => {
 	return createTRPCOptionsProxy<AppRouter>({
 		client: createTRPCClient<AppRouter>({
 			links: getLinks({
-				sourceType: "preload",
 				headers: {
 					...headers,
 					cookie: [headers.cookie, getAuthCookie(ctx.userId)]
 						.filter(Boolean)
 						.join(";"),
 				},
+				sourceType: "preload",
 			}),
 		}),
 		queryClient: ctx.queryClient,

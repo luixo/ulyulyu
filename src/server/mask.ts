@@ -1,13 +1,14 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import type { GameId, UserId, WordId } from "~/server/validation";
 
+const { MASK_KEY = "1234567890abcdef" } = process.env;
+
 const algorithm = "aes-128-cbc" as const;
-const key = process.env.MASK_KEY || "1234567890abcdef";
 const adjustIv = (rawIv: string) => rawIv.padEnd(16, "0").slice(0, 16);
 const getEncryptor = (iv: string) =>
-	crypto.createCipheriv(algorithm, key, adjustIv(iv));
+	crypto.createCipheriv(algorithm, MASK_KEY, adjustIv(iv));
 const getDecryptor = (iv: string) =>
-	crypto.createDecipheriv(algorithm, key, adjustIv(iv));
+	crypto.createDecipheriv(algorithm, MASK_KEY, adjustIv(iv));
 
 export const maskUserId = (
 	userId: UserId,

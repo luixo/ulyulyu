@@ -9,8 +9,8 @@ import { gameIdSchema } from "~/server/validation";
 export const procedure = authProcedure
 	.input(
 		z.object({
-			id: gameIdSchema,
 			direction: z.union([z.literal("forward"), z.literal("backward")]),
+			id: gameIdSchema,
 		}),
 	)
 	.mutation(async ({ ctx, input }) => {

@@ -1,11 +1,13 @@
 import { heroui } from "@heroui/react";
-export default heroui();
-
 import "react";
 
+export default heroui();
+
 declare module "react" {
-	// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style, @typescript-eslint/consistent-type-definitions
+	// Custom properties augment React's existing interface with a template-literal index.
+	// oxlint-disable-next-line typescript/consistent-type-definitions
 	interface CSSProperties {
+		// oxlint-disable-next-line typescript/consistent-indexed-object-style
 		[key: `--${string}`]: string | number;
 	}
 }

@@ -68,7 +68,7 @@ const TeamsDefinitions: React.FC<{
 						<TeamReadiness
 							className="self-start"
 							teamId={id}
-							// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+							// oxlint-disable-next-line typescript/no-non-null-assertion
 							ready={readiness[id]!}
 						/>
 					}
@@ -103,52 +103,47 @@ const TeamGuesses: React.FC<{
 			</ResultCard>
 			{teamsValues.map(({ id, vote }) => {
 				const believedByTeams = teamsValues.filter((team) => team.vote === id);
-				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-				const votingTeam = teams[id]!;
+				const votingTeam = teams[id];
 				return (
-					<>
-						<ResultCard
-							title={
-								votingTeam
-									? votingTeam.nickname
-									: t("pages.guessing.owner.actualDefinition")
-							}
-							points={
-								(vote === null ? 1 : 0) +
-								teamsValues.filter((team) => team.vote === id).length
-							}
-							footer={
-								<div className="flex flex-col gap-1">
-									{vote === null ? (
-										<span className="text-success">
-											{t("pages.guessing.owner.successfulVote")}
-										</span>
-									) : (
-										<span className="text-danger">
-											{t("pages.guessing.owner.failedVote", {
-												// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-												team: teams[vote]!.nickname,
-											})}
-										</span>
-									)}
-									{believedByTeams.length === 0 ? null : (
-										<i className="text-success">
-											{t("pages.guessing.owner.otherVote", {
-												count: believedByTeams.length,
-												teams: believedByTeams
-													// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-													.map((team) => `"${teams[team.id]!.nickname}"`)
-													.join(", "),
-											})}
-										</i>
-									)}
-								</div>
-							}
-						>
-							{/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-							<span>{guessing.definitions[id]!}</span>
-						</ResultCard>
-					</>
+					<ResultCard
+						key={id}
+						title={
+							votingTeam
+								? votingTeam.nickname
+								: t("pages.guessing.owner.actualDefinition")
+						}
+						points={
+							(vote === null ? 1 : 0) +
+							teamsValues.filter((team) => team.vote === id).length
+						}
+						footer={
+							<div className="flex flex-col gap-1">
+								{vote === null ? (
+									<span className="text-success">
+										{t("pages.guessing.owner.successfulVote")}
+									</span>
+								) : (
+									<span className="text-danger">
+										{t("pages.guessing.owner.failedVote", {
+											team: teams[vote]?.nickname,
+										})}
+									</span>
+								)}
+								{believedByTeams.length === 0 ? null : (
+									<i className="text-success">
+										{t("pages.guessing.owner.otherVote", {
+											count: believedByTeams.length,
+											teams: believedByTeams
+												.map((team) => `"${teams[team.id]?.nickname}"`)
+												.join(", "),
+										})}
+									</i>
+								)}
+							</div>
+						}
+					>
+						<span>{guessing.definitions[id]}</span>
+					</ResultCard>
 				);
 			})}
 		</div>
@@ -168,7 +163,7 @@ const NextButton = suspendedFallback<{
 			gameId,
 		}),
 	);
-	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	// oxlint-disable-next-line typescript/no-non-null-assertion
 	const wordGuessing = definitions[wordId]!;
 	const { lastWordPosition } = useWordPositions();
 	const allTeamsReady = values(wordGuessing.readiness).every(Boolean);
@@ -176,10 +171,10 @@ const NextButton = suspendedFallback<{
 		<Button
 			color="primary"
 			onPress={() => {
-				gameStateMutation.mutate({ id: gameId, direction: "forward" });
+				gameStateMutation.mutate({ direction: "forward", id: gameId });
 			}}
 			isDisabled={!allTeamsReady || !wordGuessing.revealMap}
-			className={word.position !== lastWordPosition ? "invisible" : undefined}
+			className={word.position === lastWordPosition ? undefined : "invisible"}
 		>
 			{t("components.nextPhase.button")}
 		</Button>
@@ -194,7 +189,7 @@ const NextArrow = suspendedFallback<{ wordId: WordId }>(({ wordId }) => {
 			gameId,
 		}),
 	);
-	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+	// oxlint-disable-next-line typescript/no-non-null-assertion
 	const wordGuessing = definitions[wordId]!;
 	const allTeamsReady = values(wordGuessing.readiness).every(Boolean);
 	if (wordGuessing.revealMap) {
@@ -216,7 +211,7 @@ const TeamsCard = suspendedFallback<{
 				gameId,
 			}),
 		);
-		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+		// oxlint-disable-next-line typescript/no-non-null-assertion
 		const wordGuessing = definitions[wordId]!;
 		if (wordGuessing.revealMap) {
 			return (
@@ -242,6 +237,7 @@ const TeamsCard = suspendedFallback<{
 			<>
 				<Skeleton className="h-24 w-full rounded-lg" />
 				{Array.from({ length: keys(teams).length }).map((_, index) => (
+					// oxlint-disable-next-line react/no-array-index-key
 					<Skeleton key={index} className="h-24 w-full rounded-lg" />
 				))}
 			</>

@@ -31,8 +31,8 @@ export const useLeaveMutation = () => {
 	);
 	return useMutation(
 		trpc.teams.leave.mutationOptions({
-			onMutate: () => removeTeamCache(selfUserId),
 			onError: () => invalidateGameCache(),
+			onMutate: () => removeTeamCache(selfUserId),
 		}),
 	);
 };
@@ -46,8 +46,8 @@ export const useKickMutation = () => {
 	);
 	return useMutation(
 		trpc.teams.kick.mutationOptions({
-			onMutate: (variables) => removeTeamCache(variables.teamId),
 			onError: () => invalidateGameCache(),
+			onMutate: (variables) => removeTeamCache(variables.teamId),
 		}),
 	);
 };
@@ -56,6 +56,8 @@ export const useSubscribeToLeave = () => {
 	const removeTeamCache = useRemoveTeamCache();
 	return useSubscription(
 		"team:leave",
-		useEventCallback(({ userId }) => removeTeamCache(userId)),
+		useEventCallback(({ userId }) => {
+			removeTeamCache(userId);
+		}),
 	);
 };

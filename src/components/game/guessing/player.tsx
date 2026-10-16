@@ -61,9 +61,9 @@ const TeamsDefinitions: React.FC<{
 
 	return (
 		<RadioGroup
-			value={definitions.vote || undefined}
+			value={definitions.vote ?? undefined}
 			onValueChange={(guessUserId: string) =>
-				voteMutation.mutate({ gameId, wordId, guessUserId })
+				voteMutation.mutate({ gameId, guessUserId, wordId })
 			}
 			isDisabled={Boolean(definitions.revealMap)}
 		>
@@ -90,7 +90,7 @@ const TeamsResults: React.FC<{
 	const { t } = useTranslation();
 	const { teams } = useGame();
 	const [{ id: selfUserId }] = React.use(UserContext);
-	const teamsEntries = entries(revealMap).sort(([, teamA], [, teamB]) => {
+	const teamsEntries = entries(revealMap).toSorted(([, teamA], [, teamB]) => {
 		if (teamA === null) {
 			return -1;
 		}
@@ -230,6 +230,7 @@ const TeamsCard = suspendedFallback<Props>(
 				<RadioGroup isDisabled>
 					{Array.from({ length: keys(words).length }).map((_, index) => (
 						<Radio
+							// oxlint-disable-next-line react/no-array-index-key
 							key={index}
 							value=""
 							isDisabled

@@ -1,13 +1,15 @@
 import { Kysely, PostgresDialect } from "kysely";
-import { Pool, type PoolConfig } from "pg";
+import { Pool } from "pg";
+import type { PoolConfig } from "pg";
 import type { DB } from "~/db/database.gen";
 
 const getDatabaseConfig = (): PoolConfig => {
-	if (!process.env.DATABASE_URL) {
+	const { DATABASE_URL = "" } = process.env;
+	if (!DATABASE_URL) {
 		throw new Error("Expected to have process.env.DATABASE_URL variable!");
 	}
 	return {
-		connectionString: process.env.DATABASE_URL,
+		connectionString: DATABASE_URL,
 		ssl: true,
 	};
 };

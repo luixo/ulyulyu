@@ -5,15 +5,15 @@ import { USER_ID_COOKIE } from "~/utils/auth";
 import { YEAR } from "~/utils/time";
 
 export const setUserLanguage = (userId: UserId) => {
-	window.cookieStore.delete({
+	void window.cookieStore.delete({
 		name: USER_ID_COOKIE,
 		path: "/",
 	});
-	window.cookieStore.set({
-		name: USER_ID_COOKIE,
-		value: userId,
+	void window.cookieStore.set({
 		expires: new Date(Date.now() + YEAR).valueOf(),
+		name: USER_ID_COOKIE,
 		path: "/",
+		value: userId,
 	});
 };
 

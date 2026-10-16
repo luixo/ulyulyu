@@ -6,9 +6,9 @@ import { procedure as kick } from "./kick";
 import { procedure as leave } from "./leave";
 
 export const router = baseRouter({
-	join,
-	leave,
-	kick,
-	changeReadiness,
 	changeNickname,
+	changeReadiness,
+	join,
+	kick,
+	leave,
 });

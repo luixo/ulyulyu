@@ -29,9 +29,9 @@ import type { WordId } from "~/server/validation";
 const NEW_WORD_ID = "__new__" as WordId;
 
 const NEW_WORD_ITEM: Game["words"][WordId] = {
+	definition: "",
 	position: Infinity,
 	term: "",
-	definition: "",
 };
 
 type WordOverrides = Record<
@@ -98,7 +98,7 @@ const WordInput: React.FC<InputProps> = ({
 								) {
 									return;
 								}
-								saveTermMutation.mutate({ wordId, term: nextTerm });
+								saveTermMutation.mutate({ term: nextTerm, wordId });
 								setOverrides((prevWords) =>
 									prevWords[wordId]
 										? {
@@ -181,8 +181,8 @@ const DefinitionInput: React.FC<InputProps> = ({
 										: prevWords,
 								);
 								saveDefinitionMutation.mutate({
-									wordId,
 									definition: nextDefinition,
+									wordId,
 								});
 								// TODO: error case
 							}}
@@ -210,9 +210,9 @@ const AddWordButton: React.FC<{
 			color="primary"
 			onPress={() => {
 				addMutation.mutate({
+					definition: word.definition ?? "",
 					gameId,
 					term: word.term,
-					definition: word.definition ?? "",
 				});
 				setOverrides((prevWords) => ({
 					...prevWords,
@@ -266,8 +266,8 @@ const useSortedWords = (overrides: WordOverrides) => {
 		return { ...acc, [id]: { ...baseWord, ...overrideWord } };
 	}, {});
 	return entries(mergedWords)
-		.sort(([, a], [, b]) => a.position - b.position)
-		.filter(([, { deleted }]) => !deleted);
+		.toSorted(([, a], [, b]) => a.position - b.position)
+		.filter(([, { deleted = false }]) => !deleted);
 };
 
 export const Words = () => {
@@ -309,16 +309,21 @@ export const Words = () => {
 									showLabel={index === 0}
 								/>
 							) : null}
-							{!isOwner ? null : id === NEW_WORD_ID ? (
-								<AddWordButton
-									word={word}
-									disabled={isAddMutationLoading}
-									setOverrides={setWordOverrides}
-									addMutation={addMutation}
-								/>
-							) : (
-								<RemoveWordButton wordId={id} setOverrides={setWordOverrides} />
-							)}
+							{isOwner ? (
+								id === NEW_WORD_ID ? (
+									<AddWordButton
+										word={word}
+										disabled={isAddMutationLoading}
+										setOverrides={setWordOverrides}
+										addMutation={addMutation}
+									/>
+								) : (
+									<RemoveWordButton
+										wordId={id}
+										setOverrides={setWordOverrides}
+									/>
+								)
+							) : null}
 						</div>
 					);
 				})}

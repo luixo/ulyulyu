@@ -9,10 +9,10 @@ import { procedure as vote } from "./vote";
 
 export const router = baseRouter({
 	getAdmin,
-	getPlayer,
-	put,
-	vote,
 	getAdminGuessing,
+	getPlayer,
 	getPlayerGuessing,
+	put,
 	reveal,
+	vote,
 });

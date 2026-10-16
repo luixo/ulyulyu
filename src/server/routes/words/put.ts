@@ -5,18 +5,18 @@ import { getDatabase } from "~/db";
 import { getEmitter } from "~/server/emitter";
 import { authProcedure } from "~/server/procedures";
 import {
-	type WordId,
 	definitionSchema,
 	gameIdSchema,
 	termSchema,
 } from "~/server/validation";
+import type { WordId } from "~/server/validation";
 
 export const procedure = authProcedure
 	.input(
 		z.strictObject({
+			definition: definitionSchema,
 			gameId: gameIdSchema,
 			term: termSchema,
-			definition: definitionSchema,
 		}),
 	)
 	.mutation(async ({ ctx, input }) => {
@@ -49,22 +49,22 @@ export const procedure = authProcedure
 		const word = await db
 			.insertInto("words")
 			.values({
-				id: wordId,
-				gameId: input.gameId,
-				term: input.term,
-				position: wordPosition,
 				definition: input.definition,
+				gameId: input.gameId,
+				id: wordId,
+				position: wordPosition,
 				revealed: false,
+				term: input.term,
 			})
 			.returning(["words.id", "words.position"])
 			.executeTakeFirstOrThrow();
 		const emitter = getEmitter(ctx, input.gameId);
 		emitter.trigger("word:add", {
+			// We don't disclose original definitions to player
+			definition: "",
 			id: wordId,
 			position: word.position,
 			term: input.term,
-			// We don't disclose original definitions to player
-			definition: "",
 		});
 		return { id: word.id, position: word.position };
 	});

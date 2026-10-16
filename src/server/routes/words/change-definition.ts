@@ -7,8 +7,8 @@ import { definitionSchema, wordIdSchema } from "~/server/validation";
 export const procedure = authProcedure
 	.input(
 		z.strictObject({
-			wordId: wordIdSchema,
 			definition: definitionSchema,
+			wordId: wordIdSchema,
 		}),
 	)
 	.mutation(async ({ ctx, input }) => {

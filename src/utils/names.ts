@@ -226,14 +226,14 @@ export const getAvatar = (
 	gameId: string | null,
 	name: string | null,
 ) => {
-	const gameHash = gameId ? cyrb53(gameId) : 0;
+	const gameHash = gameId === null ? 0 : cyrb53(gameId);
 	const idColorHash = cyrb53(id, gameHash);
 	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 	const color = RANDOM_COLORS[idColorHash % RANDOM_COLORS.length]!;
-	if (name) {
-		return { name, color: color[1] };
+	if (name !== null) {
+		return { color: color[1], name };
 	}
 	const idNameHash = cyrb53(id, gameHash + 1);
 	const entity = RANDOM_ENTITIES[idNameHash % RANDOM_ENTITIES.length];
-	return { name: [color[0], entity].join(" "), color: color[1] };
+	return { color: color[1], name: [color[0], entity].join(" ") };
 };

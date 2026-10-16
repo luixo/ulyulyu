@@ -14,7 +14,7 @@ export const ErrorMessage: React.FC<{
 						typeof error === "string"
 							? error
 							: typeof error === "object" && error instanceof Error
-								? (error as Error).message
+								? error.message
 								: JSON.stringify(error, null, 4),
 				})}
 			</CardBody>

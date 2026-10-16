@@ -35,9 +35,9 @@ export const useTeamNicknameChangeMutation = () => {
 	);
 	return useMutation(
 		trpc.teams.changeNickname.mutationOptions({
+			onError: () => invalidateGameCache(),
 			onMutate: (variables) =>
 				changeTeamNicknameCache(selfUserId, variables.nickname),
-			onError: () => invalidateGameCache(),
 		}),
 	);
 };
@@ -46,8 +46,8 @@ export const useSubscribeToTeamNicknameChange = () => {
 	const changeTeamNicknameCache = useChangeTeamNicknameCache();
 	return useSubscription(
 		"team:nickname",
-		useEventCallback(({ userId, nickname }) =>
-			changeTeamNicknameCache(userId, nickname),
-		),
+		useEventCallback(({ userId, nickname }) => {
+			changeTeamNicknameCache(userId, nickname);
+		}),
 	);
 };

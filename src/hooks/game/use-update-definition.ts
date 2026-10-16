@@ -39,7 +39,7 @@ const useChangeGameWordDefinition = () => {
 						...game.words,
 						[wordId]: {
 							...game.words[wordId],
-							definition: definition || "",
+							definition: definition ?? "",
 						},
 					}
 				: game.words,
@@ -106,16 +106,16 @@ export const useUpdateDefinitionMutation = () => {
 	);
 	return useMutation(
 		trpc.definitions.put.mutationOptions({
+			onError: () => {
+				void invalidateGameCache();
+				void invalidatePlayerDefinitionsCache();
+			},
 			onMutate: (variables) => {
 				changeGameWordDefinition(variables.wordId, variables.definition);
 				changeDefsPlayerWordDefinitionCache(
 					variables.wordId,
 					variables.definition,
 				);
-			},
-			onError: () => {
-				invalidateGameCache();
-				invalidatePlayerDefinitionsCache();
 			},
 		}),
 	);

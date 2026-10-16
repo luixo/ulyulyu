@@ -3,7 +3,8 @@ import { Card, CardBody } from "@heroui/react";
 import { entries } from "remeda";
 import { ProposalPhaseOwner } from "~/components/game/proposal/owner";
 import { ProposalPhasePlayer } from "~/components/game/proposal/player";
-import { type Game, useGame } from "~/hooks/use-game";
+import { useGame } from "~/hooks/use-game";
+import type { Game } from "~/hooks/use-game";
 
 export const ProposalPhase: React.FC<{
 	state: Extract<Game["state"], { phase: "proposal" }>;

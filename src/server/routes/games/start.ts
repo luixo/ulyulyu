@@ -64,8 +64,8 @@ export const procedure = authProcedure
 			.where("games.id", "=", input.id)
 			.set({
 				state: {
-					phase: "proposal",
 					currentPosition: firstTeam.firstWordPosition,
+					phase: "proposal",
 				},
 			})
 			.executeTakeFirst();

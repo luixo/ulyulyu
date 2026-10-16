@@ -26,50 +26,58 @@ export const useGameStateMutation = () => {
 	const { firstWordPosition, lastWordPosition } = useWordPositions();
 	return useMutation(
 		trpc.games.changeState.mutationOptions({
+			onError: () => invalidateGameCache(),
 			onMutate: (variables) => {
 				switch (variables.direction) {
 					case "forward": {
 						switch (currentState.phase) {
-							case "start":
+							case "start": {
 								return changeGameStateCache({
+									currentPosition: firstWordPosition,
 									phase: "proposal",
-									currentPosition: firstWordPosition,
 								});
-							case "proposal":
+							}
+							case "proposal": {
 								return changeGameStateCache({
-									phase: "guessing",
 									currentPosition: firstWordPosition,
+									phase: "guessing",
 								});
-							case "guessing":
+							}
+							case "guessing": {
 								return changeGameStateCache({ phase: "finish" });
-							case "finish":
+							}
+							case "finish": {
 								break;
+							}
 						}
 						break;
 					}
 					case "backward": {
 						switch (currentState.phase) {
-							case "start":
+							case "start": {
 								return;
-							case "proposal":
+							}
+							case "proposal": {
 								return changeGameStateCache({
 									phase: "start",
 								});
-							case "guessing":
+							}
+							case "guessing": {
 								return changeGameStateCache({
+									currentPosition: lastWordPosition,
 									phase: "proposal",
-									currentPosition: lastWordPosition,
 								});
-							case "finish":
+							}
+							case "finish": {
 								return changeGameStateCache({
-									phase: "guessing",
 									currentPosition: lastWordPosition,
+									phase: "guessing",
 								});
+							}
 						}
 					}
 				}
 			},
-			onError: () => invalidateGameCache(),
 		}),
 	);
 };
@@ -78,6 +86,8 @@ export const useSubscribeToGameState = () => {
 	const changeGameStateCache = useChangeGameStateCache();
 	return useSubscription(
 		"game:state",
-		useEventCallback(({ state }) => changeGameStateCache(state)),
+		useEventCallback(({ state }) => {
+			changeGameStateCache(state);
+		}),
 	);
 };

@@ -8,8 +8,8 @@ import { termSchema, wordIdSchema } from "~/server/validation";
 export const procedure = authProcedure
 	.input(
 		z.strictObject({
-			wordId: wordIdSchema,
 			term: termSchema,
+			wordId: wordIdSchema,
 		}),
 	)
 	.mutation(async ({ ctx, input }) => {
@@ -40,7 +40,7 @@ export const procedure = authProcedure
 			.executeTakeFirst();
 		const emitter = getEmitter(ctx, gameWord.gameId);
 		emitter.trigger("word:term-update", {
-			wordId: input.wordId,
 			term: input.term,
+			wordId: input.wordId,
 		});
 	});

@@ -5,8 +5,8 @@ import { procedure as put } from "./put";
 import { procedure as remove } from "./remove";
 
 export const router = baseRouter({
+	changeDefinition,
+	changeTerm,
 	put,
 	remove,
-	changeTerm,
-	changeDefinition,
 });

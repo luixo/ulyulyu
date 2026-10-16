@@ -6,11 +6,75 @@ import { getEmitter } from "~/server/emitter";
 import { authProcedure } from "~/server/procedures";
 import { gameIdSchema } from "~/server/validation";
 
+const getNextState = (
+	input: { direction: "forward" | "backward" },
+	game: {
+		state: Game["state"];
+		firstWordPosition: number;
+		lastWordPosition: number;
+	},
+) => {
+	switch (input.direction) {
+		case "forward": {
+			switch (game.state.phase) {
+				case "start": {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Game should be started via game.start handler",
+					});
+				}
+				case "proposal": {
+					return {
+						currentPosition: game.firstWordPosition,
+						phase: "guessing",
+					} as const;
+				}
+				case "guessing": {
+					return { phase: "finish" } as const;
+				}
+				case "finish": {
+					throw new TRPCError({
+						code: "PRECONDITION_FAILED",
+						message: "Game cannot be forwarded from 'finish' state",
+					});
+				}
+			}
+		}
+		// This is unreachable, we don't track nested switch statements
+		// oxlint-disable-next-line no-fallthrough
+		case "backward": {
+			switch (game.state.phase) {
+				case "start": {
+					throw new TRPCError({
+						code: "PRECONDITION_FAILED",
+						message: "Game cannot be backwarded from 'start' state",
+					});
+				}
+				case "proposal": {
+					return { phase: "start" } as const;
+				}
+				case "guessing": {
+					return {
+						currentPosition: game.lastWordPosition,
+						phase: "proposal",
+					} as const;
+				}
+				case "finish": {
+					return {
+						currentPosition: game.lastWordPosition,
+						phase: "guessing",
+					} as const;
+				}
+			}
+		}
+	}
+};
+
 export const procedure = authProcedure
 	.input(
 		z.object({
-			id: gameIdSchema,
 			direction: z.union([z.literal("forward"), z.literal("backward")]),
+			id: gameIdSchema,
 		}),
 	)
 	.mutation(async ({ ctx, input }) => {
@@ -37,58 +101,7 @@ export const procedure = authProcedure
 				message: "Game not found or you are not the game owner",
 			});
 		}
-		let nextState: Game["state"];
-		switch (input.direction) {
-			case "forward": {
-				switch (game.state.phase) {
-					case "start":
-						throw new TRPCError({
-							code: "FORBIDDEN",
-							message: "Game should be started via game.start handler",
-						});
-					case "proposal":
-						nextState = {
-							phase: "guessing",
-							currentPosition: game.firstWordPosition,
-						};
-						break;
-					case "guessing":
-						nextState = { phase: "finish" };
-						break;
-					case "finish":
-						throw new TRPCError({
-							code: "PRECONDITION_FAILED",
-							message: "Game cannot be forwarded from 'finish' state",
-						});
-				}
-				break;
-			}
-			case "backward": {
-				switch (game.state.phase) {
-					case "start":
-						throw new TRPCError({
-							code: "PRECONDITION_FAILED",
-							message: "Game cannot be backwarded from 'start' state",
-						});
-					case "proposal":
-						nextState = { phase: "start" };
-						break;
-					case "guessing":
-						nextState = {
-							phase: "proposal",
-							currentPosition: game.lastWordPosition,
-						};
-						break;
-					case "finish":
-						nextState = {
-							phase: "guessing",
-							currentPosition: game.lastWordPosition,
-						};
-						break;
-				}
-				break;
-			}
-		}
+		const nextState = getNextState(input, game);
 		await db
 			.updateTable("games")
 			.where("games.id", "=", input.id)

@@ -43,9 +43,10 @@ export const useGameChangeWordPositionMutation = () => {
 		useChangeGameStateWordPositionCache();
 	return useMutation(
 		trpc.games.changeStateCurrentPosition.mutationOptions({
+			onError: () => invalidateGameCache(),
 			onMutate: (variables) =>
 				changeGameStateWordPositionCache((prevPosition) => {
-					const sortedWordsValues = values(words).sort(
+					const sortedWordsValues = values(words).toSorted(
 						(a, b) => a.position - b.position,
 					);
 					const currentWordIndex = sortedWordsValues.findIndex(
@@ -73,7 +74,6 @@ export const useGameChangeWordPositionMutation = () => {
 					}
 					return prevWord.position;
 				}),
-			onError: () => invalidateGameCache(),
 		}),
 	);
 };
@@ -83,8 +83,8 @@ export const useSubscribeToWordPositionChange = () => {
 		useChangeGameStateWordPositionCache();
 	return useSubscription(
 		"game:currentPosition",
-		useEventCallback(({ currentPosition }) =>
-			changeGameStateWordPositionCache(currentPosition),
-		),
+		useEventCallback(({ currentPosition }) => {
+			changeGameStateWordPositionCache(currentPosition);
+		}),
 	);
 };

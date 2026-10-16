@@ -6,21 +6,17 @@ import { useMounted } from "~/hooks/use-mounted";
 export const ModeSwitch = () => {
 	const [mode, setMode] = React.useState<"light" | "dark" | "auto">("auto");
 	const isMounted = useMounted();
-	const [autoMode] = React.useState<"light" | "dark">(() => {
+	const autoMode = React.useMemo<"light" | "dark">(() => {
 		if (typeof window === "undefined") {
 			return "light";
 		}
 		return window.matchMedia("(prefers-color-scheme:dark)").matches
 			? "dark"
 			: "light";
-	});
+	}, []);
 	const actualMode = mode === "auto" ? autoMode : mode;
 	React.useEffect(() => {
-		if (actualMode === "dark") {
-			document.documentElement.classList.add("dark");
-		} else {
-			document.documentElement.classList.remove("dark");
-		}
+		document.documentElement.classList.toggle("dark", actualMode === "dark");
 	}, [actualMode]);
 	return (
 		<Switch

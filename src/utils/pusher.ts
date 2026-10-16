@@ -10,13 +10,13 @@ import { transformer } from "~/utils/transformer";
 
 export const getChannelName = (gameId: GameId) => `game-${gameId}`;
 
-let pusherInstance: Pusher | undefined;
+let pusherInstance: Pusher | undefined = undefined;
 const getPusherInstance = (): Pusher => {
 	pusherInstance ??= new Pusher(import.meta.env.VITE_PUSHER_APP_KEY ?? "", {
 		cluster: import.meta.env.VITE_PUSHER_CLUSTER ?? "",
-		wsHost: import.meta.env.VITE_PUSHER_HOST,
-		forceTLS: true,
 		enabledTransports: ["ws", "wss"],
+		forceTLS: true,
+		wsHost: import.meta.env.VITE_PUSHER_HOST,
 	});
 	return pusherInstance;
 };
@@ -27,7 +27,7 @@ const channelSubscriptions: Record<
 > = {};
 
 const useChannel = (channelName: string) => {
-	const [instance] = React.useState(() => getPusherInstance());
+	const instance = React.useMemo(() => getPusherInstance(), []);
 	return useEventCallback(
 		(event: string, onData: (data: SuperJSONResult) => void) => {
 			if (!channelSubscriptions[channelName]) {
@@ -46,7 +46,6 @@ const useChannel = (channelName: string) => {
 				);
 				if (channelObject.subscribers.length === 0) {
 					instance.unsubscribe(channelName);
-					// eslint-disable-next-line @typescript-eslint/no-dynamic-delete
 					delete channelSubscriptions[channelName];
 				}
 			};
@@ -73,7 +72,7 @@ export const useBindSubscription = (channelName: string) => {
 				if (sessionId === ourSessionId) {
 					return;
 				}
-				const lastTimestamp = timestamps[event];
+				const lastTimestamp = timestamps[event] ?? 0;
 				if (lastTimestamp && lastTimestamp > timestamp) {
 					return;
 				}

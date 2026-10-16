@@ -1,27 +1,27 @@
+import { createIsomorphicFn } from "@tanstack/react-start";
 import { parse } from "cookie";
 import type { BackendModule, InitOptions, ResourceKey } from "i18next";
 import { keys } from "remeda";
 import { DAY } from "~/utils/time";
 import type { AssertAllEqual } from "~/utils/types";
+/* oxlint-disable import/no-relative-parent-imports */
 import type defaultEn from "../../public/locales/en/default.json";
 import type defaultRu from "../../public/locales/ru/default.json";
+/* oxlint-enable import/no-relative-parent-imports */
 
 // To add a language add code in the list, namespace jsons, import at (*) and verification at (**)
 export type Language = "en" | "ru";
-export const baseLanguage = "en";
+const baseLanguage = "en";
 export const languages: Record<Language, true> = {
 	en: true,
 	ru: true,
 };
 
 // To add a namespace add name in the list, namespace json, import at (*) and verification at (**)
-export type Namespace = "default";
-export const defaultNamespace: Namespace = "default";
-export const namespaces: Record<Namespace, true> = {
-	default: true,
-};
+type Namespace = "default";
+const defaultNamespace: Namespace = "default";
 
-export type Resources = {
+type Resources = {
 	default: typeof defaultEn;
 };
 
@@ -42,51 +42,67 @@ declare module "i18next" {
 	}
 }
 
+const readIsomorphic = createIsomorphicFn()
+	.server(async (language: Language, namespace: Namespace) => {
+		/* oxlint-disable import/no-nodejs-modules */
+		const fs = await import("node:fs/promises");
+		const url = await import("node:url");
+		/* oxlint-enable import/no-nodejs-modules */
+		const jsonUrl = new url.URL(
+			`../../public/locales/${language}/${namespace}.json`,
+			import.meta.url,
+		);
+
+		const fileContent = await fs.readFile(url.fileURLToPath(jsonUrl));
+		const resource = JSON.parse(fileContent.toString("utf8")) as ResourceKey;
+		return resource;
+	})
+	.client(async (language: Language, namespace: Namespace) => {
+		const response = await fetch(`/locales/${language}/${namespace}.json`);
+		return response.json() as Promise<ResourceKey>;
+	});
+
 export const getBackendModule = (): BackendModule => ({
-	type: "backend",
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	init: () => {},
+	// This is a bug in i18n
+	// oxlint-disable-next-line typescript/strict-void-return typescript/no-misused-promises
 	read: async (language, namespace) => {
 		try {
-			if (import.meta.env.SSR) {
-				const fs = await import("node:fs/promises");
-				const url = await import("node:url");
-				const jsonUrl = new url.URL(
-					`../../public/locales/${language}/${namespace}.json`,
-					import.meta.url,
-				);
-
-				const fileContent = await fs.readFile(url.fileURLToPath(jsonUrl));
-				const resource = JSON.parse(fileContent.toString("utf8"));
-				return resource as ResourceKey;
-			}
-			const response = await fetch(`/locales/${language}/${namespace}.json`);
-			return await (response.json() as Promise<ResourceKey>);
-		} catch (e) {
+			return await readIsomorphic(language as Language, namespace as Namespace);
+		} catch (error) {
+			// oxlint-disable-next-line no-console
 			console.error(`Failed to load ${language}/${namespace} i18n translation`);
-			throw e;
+			throw error;
 		}
 	},
+	type: "backend",
 });
 
 export const i18nInitOptions: InitOptions = {
-	fallbackLng: baseLanguage,
 	defaultNS: defaultNamespace,
-	ns: [defaultNamespace],
-	supportedLngs: keys(languages),
+	fallbackLng: baseLanguage,
 	interpolation: {
 		// React doesn't need to escape values
 		escapeValue: false,
 	},
-	postProcess: "capitalize",
+	ns: [defaultNamespace],
 	partialBundledLanguages: true,
+	postProcess: "capitalize",
+	supportedLngs: keys(languages),
 };
 
-export const COOKIE_LANGUAGE_NAME = "ULYULYU_LANGUAGE";
+const COOKIE_LANGUAGE_NAME = "ULYULYU_LANGUAGE";
 
-export const setCookieLanguage = (language: Language) => {
+export const setCookieLanguage = async (language: Language) => {
 	// see https://developer.chrome.com/blog/cookie-max-age-expires?hl=ru
-	document.cookie = `${COOKIE_LANGUAGE_NAME}=${language};path=/;max-age=${(DAY * 400) / 1000};samesite=lax`;
+	await cookieStore.set({
+		expires: Date.now() + DAY * 400,
+		name: COOKIE_LANGUAGE_NAME,
+		path: "/",
+		sameSite: "lax",
+		value: language,
+	});
 };
 
 const isLanguage = (input: string): input is Language =>
@@ -101,13 +117,14 @@ const getHeaderLanguages = (request: Request | null) =>
 				.split(",")
 				.map((lang) => {
 					const [tag = "", q = "1"] = lang.trim().split(";q=");
+					const [baseTag = ""] = tag.split("-");
 					return {
+						baseTag: baseTag.toLowerCase(),
 						fullTag: tag.toLowerCase(),
-						baseTag: tag.split("-")[0]?.toLowerCase() || "",
 						q: Number(q),
 					};
 				})
-				.sort((a, b) => b.q - a.q)
+				.toSorted((a, b) => b.q - a.q)
 				.flatMap(({ fullTag, baseTag }) => [fullTag, baseTag])
 		: window.navigator.languages;
 

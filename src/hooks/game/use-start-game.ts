@@ -18,12 +18,12 @@ export const useStartGameMutation = () => {
 	);
 	return useMutation(
 		trpc.games.start.mutationOptions({
+			onError: () => invalidateGameCache(),
 			onMutate: () =>
 				changeGameStateCache({
-					phase: "proposal",
 					currentPosition: firstWordPosition,
+					phase: "proposal",
 				}),
-			onError: () => invalidateGameCache(),
 		}),
 	);
 };
@@ -44,11 +44,11 @@ export const useSubscribeToGameStart = () => {
 				expectedTeamIds.length !== actualTeamIds.length ||
 				actualTeamIds.some((teamId, index) => teamId !== expectedTeamIds[index])
 			) {
-				queryClient.invalidateQueries(gameFilter);
+				void queryClient.invalidateQueries(gameFilter);
 			}
 			changeGameStateCache({
-				phase: "proposal",
 				currentPosition: firstWordPosition,
+				phase: "proposal",
 			});
 		}),
 	);

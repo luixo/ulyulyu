@@ -18,15 +18,16 @@ export const getEmitter = (
 ): TypedEmitter => {
 	const pusherInstance = getPusherInstance();
 	return {
-		trigger: (event, data) =>
-			pusherInstance.trigger(
+		trigger: (event, data) => {
+			void pusherInstance.trigger(
 				getChannelName(gameId),
 				event,
 				transformer.serialize({
 					...data,
-					timestamp: Date.now(),
 					sessionId: context.auth.sessionId,
+					timestamp: Date.now(),
 				}),
-			),
+			);
+		},
 	};
 };

@@ -19,9 +19,9 @@ const PreviousGame: React.FC<{
 	const timestamp = new Date(game.createdAt);
 	return (
 		<Button
-			onPress={() =>
-				router.navigate({ to: "/games/$id", params: { id: game.id } })
-			}
+			onPress={() => {
+				void router.navigate({ params: { id: game.id }, to: "/games/$id" });
+			}}
 			color={
 				game.state === "done"
 					? "success"
@@ -70,6 +70,7 @@ const PreviousGamesCard = suspendedFallback(
 	},
 	<PreviousGamesCardWrapper>
 		{Array.from({ length: 3 }).map((_, index) => (
+			// oxlint-disable-next-line react/no-array-index-key
 			<Skeleton key={index} className="h-10 w-full rounded-lg" />
 		))}
 	</PreviousGamesCardWrapper>,
@@ -132,7 +133,7 @@ const JoinGameCard = () => {
 						if (slug.length !== GAMES.TYPES.ID_LENGTH) {
 							return;
 						}
-						router.navigate({ to: "/games/$id", params: { id: slug } });
+						void router.navigate({ params: { id: slug }, to: "/games/$id" });
 					}}
 					isDisabled={!slug}
 				>

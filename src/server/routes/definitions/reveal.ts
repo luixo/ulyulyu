@@ -33,7 +33,7 @@ export const procedure = authProcedure
 					"definitions.guessUserId",
 				])
 				.execute(),
-			await db
+			db
 				.updateTable("words")
 				.where("words.id", "=", input.wordId)
 				.set({ revealed: true })
@@ -65,6 +65,6 @@ export const procedure = authProcedure
 			},
 		);
 		const emitter = getEmitter(ctx, input.gameId);
-		emitter.trigger("guessing:reveal", { wordId: input.wordId, mapping });
+		emitter.trigger("guessing:reveal", { mapping, wordId: input.wordId });
 		return mapping;
 	});

@@ -7,12 +7,15 @@ import type { UserId } from "~/server/validation";
 import { userIdSchema } from "~/server/validation";
 import { SESSION_ID_HEADER, USER_ID_COOKIE } from "~/utils/auth";
 
-export const unauthProcedure = procedure.use(
+const unauthProcedure = procedure.use(
 	middleware(async ({ type, path, next, ctx }) => {
 		const start = Date.now();
+		// This is a false positive
+		// oxlint-disable-next-line node/callback-return
 		const result = await next();
 		const duration = Date.now() - start;
 		const sourceType = ctx.req.headers.get("x-source");
+		// oxlint-disable-next-line no-console
 		console.log(
 			`${result.ok ? "OK" : "Non-OK"} request timing: [${sourceType}] ${type} "${path}" in ${duration}ms`,
 		);
@@ -37,18 +40,18 @@ export const authProcedure = unauthProcedure.use(
 				message: "User id is not of valid type",
 			});
 		}
-		const sessionId = ctx.req.headers.get(SESSION_ID_HEADER) || "unknown";
+		const sessionId = ctx.req.headers.get(SESSION_ID_HEADER) ?? "unknown";
 		const user = await upsertUser(
 			userIdCookie,
-			ctx.req.headers.get("user-agent") || "unknown",
+			ctx.req.headers.get("user-agent") ?? "unknown",
 		);
 		extendAuthCookie(ctx.resHeaders, user.id);
 		return next({
 			ctx: {
 				...ctx,
 				auth: {
-					userId: user.id,
 					sessionId,
+					userId: user.id,
 				},
 			},
 		});

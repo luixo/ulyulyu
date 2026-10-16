@@ -13,7 +13,7 @@ export const getSetAuthCookie = (id: UserId, expirationDate: Date) =>
 	});
 
 export const extendAuthCookie = (headers: Headers, id: UserId) => {
-	const setCookieHeader = headers.get("set-cookie") || "";
+	const setCookieHeader = headers.get("set-cookie") ?? "";
 	headers.set(
 		"set-cookie",
 		setCookieHeader + getSetAuthCookie(id, new Date(Date.now() + YEAR)),
