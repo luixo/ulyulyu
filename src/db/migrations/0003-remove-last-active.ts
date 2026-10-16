@@ -2,25 +2,25 @@ import { COMMON, USERS } from "~/db/const";
 import type { Database } from "~/db/index";
 
 const removeLastActiveColumn = async (db: Database) => {
-  await db.schema
-    .alterTable(USERS.TABLE)
-    .dropColumn("lastActiveTimestamp")
-    .execute();
+	await db.schema
+		.alterTable(USERS.TABLE)
+		.dropColumn("lastActiveTimestamp")
+		.execute();
 };
 
 const addLastActiveColumn = async (db: Database) => {
-  await db.schema
-    .alterTable(USERS.TABLE)
-    .addColumn("lastActiveTimestamp", "timestamp", (cb) =>
-      cb.notNull().defaultTo(COMMON.nowTimestamp),
-    )
-    .execute();
+	await db.schema
+		.alterTable(USERS.TABLE)
+		.addColumn("lastActiveTimestamp", "timestamp", (cb) =>
+			cb.notNull().defaultTo(COMMON.nowTimestamp),
+		)
+		.execute();
 };
 
 export const up = async (db: Database) => {
-  await removeLastActiveColumn(db);
+	await removeLastActiveColumn(db);
 };
 
 export const down = async (db: Database) => {
-  await addLastActiveColumn(db);
+	await addLastActiveColumn(db);
 };

@@ -6,27 +6,27 @@ import { getChannelName } from "~/utils/pusher";
 import { transformer } from "~/utils/transformer";
 
 type TypedEmitter = {
-  trigger: <K extends keyof SubscriptionMapping>(
-    event: K,
-    data: SubscriptionMapping[K],
-  ) => void;
+	trigger: <K extends keyof SubscriptionMapping>(
+		event: K,
+		data: SubscriptionMapping[K],
+	) => void;
 };
 
 export const getEmitter = (
-  context: AuthContext,
-  gameId: GameId,
+	context: AuthContext,
+	gameId: GameId,
 ): TypedEmitter => {
-  const pusherInstance = getPusherInstance();
-  return {
-    trigger: (event, data) =>
-      pusherInstance.trigger(
-        getChannelName(gameId),
-        event,
-        transformer.serialize({
-          ...data,
-          timestamp: Date.now(),
-          sessionId: context.auth.sessionId,
-        }),
-      ),
-  };
+	const pusherInstance = getPusherInstance();
+	return {
+		trigger: (event, data) =>
+			pusherInstance.trigger(
+				getChannelName(gameId),
+				event,
+				transformer.serialize({
+					...data,
+					timestamp: Date.now(),
+					sessionId: context.auth.sessionId,
+				}),
+			),
+	};
 };

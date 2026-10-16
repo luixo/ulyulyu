@@ -6,21 +6,21 @@ import devtoolsJson from "vite-plugin-devtools-json";
 import tsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  server: {
-    port: 3000,
-  },
-  plugins: [
-    devtoolsJson(),
-    tsConfigPaths({
-      projects: ["./tsconfig.json"],
-    }),
-    tanstackStart({ customViteReactPlugin: true }),
+	server: {
+		port: 3000,
+	},
+	plugins: [
+		devtoolsJson(),
+		tsConfigPaths({
+			projects: ["./tsconfig.json"],
+		}),
+		tanstackStart({ customViteReactPlugin: true }),
 
-    viteReact({
-      babel: {
-        plugins: ["babel-plugin-react-compiler"],
-      },
-    }),
-    tailwindcss(),
-  ],
+		viteReact({
+			babel: {
+				plugins: ["babel-plugin-react-compiler"],
+			},
+		}),
+		tailwindcss(),
+	],
 });

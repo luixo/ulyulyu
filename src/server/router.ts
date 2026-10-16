@@ -5,10 +5,10 @@ import { router as words } from "~/server/routes/words";
 import { router as baseRouter } from "~/server/trpc";
 
 export const appRouter = baseRouter({
-  games,
-  teams,
-  words,
-  definitions,
+	games,
+	teams,
+	words,
+	definitions,
 });
 
 export type AppRouter = typeof appRouter;
