@@ -1,21 +1,13 @@
-import { serialize } from "cookie";
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { setCookie } from "@tanstack/react-start/server";
 import type { UserId } from "~/server/validation";
 import { USER_ID_COOKIE } from "~/utils/auth";
 import { YEAR } from "~/utils/time";
 
-export const getAuthCookie = (id: UserId) => `${USER_ID_COOKIE}=${id}`;
-
-export const getSetAuthCookie = (id: UserId, expirationDate: Date) =>
-	serialize(USER_ID_COOKIE, id, {
-		expires: expirationDate,
+export const setAuthCookie = createIsomorphicFn().server((userId: UserId) => {
+	setCookie(USER_ID_COOKIE, userId, {
+		expires: new Date(Date.now() + YEAR),
 		path: "/",
 		secure: true,
 	});
-
-export const extendAuthCookie = (headers: Headers, id: UserId) => {
-	const setCookieHeader = headers.get("set-cookie") ?? "";
-	headers.set(
-		"set-cookie",
-		setCookieHeader + getSetAuthCookie(id, new Date(Date.now() + YEAR)),
-	);
-};
+});

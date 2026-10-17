@@ -1,25 +1,27 @@
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
+import { nitro } from "nitro/vite";
+import path from "node:path";
 import { defineConfig } from "vite";
 import devtoolsJson from "vite-plugin-devtools-json";
-import tsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
 	plugins: [
 		devtoolsJson(),
-		tsConfigPaths({
-			projects: ["./tsconfig.json"],
+		tanstackStart({
+			srcDirectory: "src",
 		}),
-		tanstackStart({ customViteReactPlugin: true }),
-
-		viteReact({
-			babel: {
-				plugins: ["babel-plugin-react-compiler"],
-			},
+		nitro({
+			output: { dir: path.join(import.meta.dirname, "dist") },
+			preset: "bun",
 		}),
+		viteReact(),
 		tailwindcss(),
 	],
+	resolve: {
+		tsconfigPaths: true,
+	},
 	server: {
 		port: 3000,
 	},

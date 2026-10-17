@@ -5,7 +5,7 @@ export default getLintConfig({
 		browser: true,
 		node: true,
 	},
-	ignorePatterns: [".tanstack/", "**/*.gen.*"],
+	ignorePatterns: ["dist/**", "**/*.gen.*"],
 	overrides: [
 		{
 			files: ["src/routes/**/*"],
@@ -15,7 +15,7 @@ export default getLintConfig({
 			},
 		},
 		{
-			files: ["src/server/**", "src/db/**"],
+			files: ["src/server/**", "src/db/**", "vite.config.ts"],
 			rules: {
 				// This is node environment, we might use process.env there
 				"import/no-nodejs-modules": "off",

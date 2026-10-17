@@ -1,7 +1,7 @@
 import { getFormatConfig } from "@luixo/configs";
 
 export default getFormatConfig({
-	ignorePatterns: [".output", "*.gen.ts"],
+	ignorePatterns: ["dist/**", "*.gen.ts"],
 	imports: {
 		customGroups: [
 			{

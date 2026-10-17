@@ -1,11 +1,11 @@
 import { TRPCError } from "@trpc/server";
-import { parse } from "cookie";
-import { extendAuthCookie } from "~/server/auth";
+import { setAuthCookie } from "~/server/auth";
 import { middleware, procedure } from "~/server/trpc";
 import { upsertUser } from "~/server/user";
 import type { UserId } from "~/server/validation";
 import { userIdSchema } from "~/server/validation";
 import { SESSION_ID_HEADER, USER_ID_COOKIE } from "~/utils/auth";
+import { getCookies } from "~/utils/cookie";
 
 const unauthProcedure = procedure.use(
 	middleware(async ({ type, path, next, ctx }) => {
@@ -25,7 +25,7 @@ const unauthProcedure = procedure.use(
 
 export const authProcedure = unauthProcedure.use(
 	middleware(async ({ ctx, next }) => {
-		const cookies = parse(ctx.req.headers.get("cookie") ?? "");
+		const cookies = await getCookies();
 		const userIdCookie = cookies[USER_ID_COOKIE] as UserId | undefined;
 		if (!userIdCookie) {
 			throw new TRPCError({
@@ -45,7 +45,7 @@ export const authProcedure = unauthProcedure.use(
 			userIdCookie,
 			ctx.req.headers.get("user-agent") ?? "unknown",
 		);
-		extendAuthCookie(ctx.resHeaders, user.id);
+		setAuthCookie(user.id);
 		return next({
 			ctx: {
 				...ctx,

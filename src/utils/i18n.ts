@@ -1,5 +1,5 @@
 import { createIsomorphicFn } from "@tanstack/react-start";
-import { parse } from "cookie";
+import { getRequest } from "@tanstack/react-start/server";
 import type { BackendModule, InitOptions, ResourceKey } from "i18next";
 import { keys } from "remeda";
 import { DAY } from "~/utils/time";
@@ -8,6 +8,7 @@ import type { AssertAllEqual } from "~/utils/types";
 import type defaultEn from "../../public/locales/en/default.json";
 import type defaultRu from "../../public/locales/ru/default.json";
 /* oxlint-enable import/no-relative-parent-imports */
+import { getCookies } from "./cookie";
 
 // To add a language add code in the list, namespace jsons, import at (*) and verification at (**)
 export type Language = "en" | "ru";
@@ -108,33 +109,32 @@ export const setCookieLanguage = async (language: Language) => {
 const isLanguage = (input: string): input is Language =>
 	keys(languages).includes(input as Language);
 
-const getCookie = (request: Request | null) =>
-	request ? (request.headers.get("cookie") ?? "") : document.cookie;
-
-const getHeaderLanguages = (request: Request | null) =>
-	request
-		? (request.headers.get("accept-language") ?? "")
-				.split(",")
-				.map((lang) => {
-					const [tag = "", q = "1"] = lang.trim().split(";q=");
-					const [baseTag = ""] = tag.split("-");
-					return {
-						baseTag: baseTag.toLowerCase(),
-						fullTag: tag.toLowerCase(),
-						q: Number(q),
-					};
-				})
-				.toSorted((a, b) => b.q - a.q)
-				.flatMap(({ fullTag, baseTag }) => [fullTag, baseTag])
-		: window.navigator.languages;
+const getHeaderLanguages = createIsomorphicFn()
+	.server(() => {
+		const request = getRequest();
+		return (request.headers.get("accept-language") ?? "")
+			.split(",")
+			.map((lang) => {
+				const [tag = "", q = "1"] = lang.trim().split(";q=");
+				const [baseTag = ""] = tag.split("-");
+				return {
+					baseTag: baseTag.toLowerCase(),
+					fullTag: tag.toLowerCase(),
+					q: Number(q),
+				};
+			})
+			.toSorted((a, b) => b.q - a.q)
+			.flatMap(({ fullTag, baseTag }) => [fullTag, baseTag]);
+	})
+	.client(() => window.navigator.languages);
 
 type Strategy = "cookie" | "header" | "baseLocale";
 const strategies: Strategy[] = ["cookie", "header", "baseLocale"];
-export const getLanguageFromRequest = (request: Request | null) => {
+export const getInitialLanguage = async () => {
 	for (const strategy of strategies) {
 		switch (strategy) {
 			case "cookie": {
-				const cookies = parse(getCookie(request));
+				const cookies = await getCookies();
 				const cookieLanguage = cookies[COOKIE_LANGUAGE_NAME] ?? "";
 				if (isLanguage(cookieLanguage)) {
 					return cookieLanguage;
@@ -142,7 +142,7 @@ export const getLanguageFromRequest = (request: Request | null) => {
 				break;
 			}
 			case "header": {
-				const headerLanguages = getHeaderLanguages(request);
+				const headerLanguages = getHeaderLanguages();
 				for (const headerLanguage of headerLanguages) {
 					if (isLanguage(headerLanguage)) {
 						return headerLanguage;

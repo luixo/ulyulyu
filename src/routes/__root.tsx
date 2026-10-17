@@ -10,7 +10,7 @@ import {
 	Scripts,
 	createRootRouteWithContext,
 } from "@tanstack/react-router";
-import { serverOnly } from "@tanstack/react-start";
+import { createServerOnlyFn } from "@tanstack/react-start";
 import { createTRPCClient } from "@trpc/client";
 import type { i18n } from "i18next";
 import { useSessionStorage } from "usehooks-ts";
@@ -19,11 +19,14 @@ import { Devtools } from "~/components/devtools";
 import { SessionContext } from "~/contexts/session-context";
 import { UserContext } from "~/contexts/user-id-context";
 import { getDatabase } from "~/db";
-import { getAuthCookie } from "~/server/auth";
 import type { AppRouter } from "~/server/router";
 import type { UserId } from "~/server/validation";
 import appCss from "~/styles/app.css?url";
-import { SESSION_ID_HEADER, SESSION_ID_KEY } from "~/utils/auth";
+import {
+	SESSION_ID_HEADER,
+	SESSION_ID_KEY,
+	USER_ID_COOKIE,
+} from "~/utils/auth";
 import type { Language } from "~/utils/i18n";
 import { TRPCProvider, getLinks } from "~/utils/trpc";
 
@@ -48,7 +51,7 @@ const RootComponent = () => {
 						? {
 								headers: {
 									[SESSION_ID_HEADER]: sessionId,
-									cookie: getAuthCookie(userId),
+									cookie: `${USER_ID_COOKIE}=${userId}`,
 								},
 								sourceType: "ssr",
 							}
@@ -75,8 +78,16 @@ const RootComponent = () => {
 	);
 };
 
+const getUser = createServerOnlyFn((userId: UserId) => {
+	const db = getDatabase();
+	return db
+		.selectFrom("users")
+		.where("id", "=", userId)
+		.select(["id", "name"])
+		.executeTakeFirst();
+});
+
 export type RouterContext = {
-	request: Request | null;
 	userId: UserId;
 	queryClient: QueryClient;
 	i18n: {
@@ -126,14 +137,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 		await i18n.instance
 			.init({ lng: i18n.initialLanguage })
 			.then(() => i18n.instance.loadNamespaces("default"));
-		const user = await serverOnly(async () => {
-			const db = getDatabase();
-			return db
-				.selectFrom("users")
-				.where("id", "=", userId)
-				.select(["id", "name"])
-				.executeTakeFirst();
-		})();
+		const user = await getUser(userId);
 		return {
 			user: user || { id: "never-happen" as UserId, name: "never-happen" },
 		};
